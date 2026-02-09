@@ -12,7 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; margin: 0; padding: 0; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         select { 
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); 
@@ -29,20 +29,34 @@
 <body class="text-slate-900">
     <div id="root"></div>
 
+    <!-- Firebase Initialization -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'sri-vinayaga-laber';
+        try {
+            const firebaseConfig = JSON.parse(__firebase_config);
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+            const auth = getAuth(app);
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'sri-vinayaga-laber-works';
 
-        window.Firebase = { db, auth, appId, collection, addDoc, onSnapshot, query, deleteDoc, doc, Timestamp, signInAnonymously, signInWithCustomToken, onAuthStateChanged };
+            // Attach to window so React can access them
+            window.Firebase = { 
+                db, auth, appId, collection, addDoc, onSnapshot, 
+                query, deleteDoc, doc, Timestamp, signInAnonymously, 
+                signInWithCustomToken, onAuthStateChanged 
+            };
+            
+            // Dispatch event to signal Firebase is ready
+            window.dispatchEvent(new Event('firebase-ready'));
+        } catch (error) {
+            console.error("Firebase Initialization Error:", error);
+        }
     </script>
 
+    <!-- React App Logic -->
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
@@ -136,6 +150,7 @@
         };
 
         function App() {
+            const [fbReady, setFbReady] = useState(!!window.Firebase);
             const [user, setUser] = useState(null);
             const [lang, setLang] = useState('ta');
             const [cart, setCart] = useState([]);
@@ -158,27 +173,38 @@
             const OWNER_PASSCODE = "1234";
             const TARGET_WHATSAPP = "8643861100";
 
+            // Wait for Firebase to be ready before initializing auth
             useEffect(() => {
-                const initAuth = async () => {
-                    try {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await window.Firebase.signInWithCustomToken(window.Firebase.auth, __initial_auth_token);
-                        } else {
-                            await window.Firebase.signInAnonymously(window.Firebase.auth);
-                        }
-                    } catch (e) { console.error(e); }
-                };
-                initAuth();
-                return window.Firebase.onAuthStateChanged(window.Firebase.auth, setUser);
+                const handleReady = () => setFbReady(true);
+                window.addEventListener('firebase-ready', handleReady);
+                return () => window.removeEventListener('firebase-ready', handleReady);
             }, []);
 
             useEffect(() => {
+                if (!fbReady) return;
+                const { auth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = window.Firebase;
+                
+                const initAuth = async () => {
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (e) { console.error("Auth init error:", e); }
+                };
+                initAuth();
+                return onAuthStateChanged(auth, setUser);
+            }, [fbReady]);
+
+            useEffect(() => {
                 if (!user || !showDashboard) return;
-                const q = window.Firebase.collection(window.Firebase.db, 'artifacts', window.Firebase.appId, 'public', 'data', 'orders');
-                return window.Firebase.onSnapshot(q, (snapshot) => {
+                const { db, appId, collection, query, onSnapshot } = window.Firebase;
+                const q = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
+                return onSnapshot(q, (snapshot) => {
                     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     setOrders(data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
-                }, (err) => console.error(err));
+                }, (err) => console.error("Firestore error:", err));
             }, [user, showDashboard]);
 
             const addToCart = (id, labelEn, labelTa, rate) => {
@@ -194,17 +220,18 @@
 
             const handleFinalizeBill = async () => {
                 if (!customerName.trim() || !user) return;
+                const { db, appId, collection, addDoc, Timestamp } = window.Firebase;
                 try {
                     const orderData = {
                         billNo,
                         customerName: customerName.trim(),
                         items: cart,
                         total: grandTotal,
-                        createdAt: window.Firebase.Timestamp.now()
+                        createdAt: Timestamp.now()
                     };
-                    await window.Firebase.addDoc(window.Firebase.collection(window.Firebase.db, 'artifacts', window.Firebase.appId, 'public', 'data', 'orders'), orderData);
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), orderData);
                     setIsBillGenerated(true);
-                } catch (e) { console.error(e); }
+                } catch (e) { console.error("Finalize error:", e); }
             };
 
             const sendWhatsApp = () => {
@@ -219,24 +246,19 @@
                 const doc = new jsPDF();
                 const date = new Date().toLocaleDateString('en-IN');
                 
-                // Header
                 doc.setFontSize(20); doc.setFont("helvetica", "bold");
                 doc.text(T.title, 105, 20, { align: "center" });
                 doc.setFontSize(10); doc.setFont("helvetica", "normal");
                 doc.text(T.subtitle, 105, 26, { align: "center" });
                 doc.text(T.address, 105, 31, { align: "center" });
                 doc.text(T.contacts, 105, 36, { align: "center" });
-                
-                // Horizontal Line
                 doc.line(10, 42, 200, 42);
                 
-                // Bill Info
                 doc.setFontSize(12); doc.setFont("helvetica", "bold");
                 doc.text(`Bill No: #${billNo}`, 10, 52);
                 doc.text(`Date: ${date}`, 200, 52, { align: "right" });
                 doc.text(`Customer: ${customerName.trim()}`, 10, 60);
                 
-                // Table
                 const tableData = cart.map(i => [
                     lang === 'en' ? i.labelEn : i.labelTa,
                     i.qty.toString(),
@@ -249,18 +271,14 @@
                     head: [['Description', 'Qty', 'Rate', 'Total']],
                     body: tableData,
                     theme: 'striped',
-                    headStyles: { fillStyle: 'black', fillColor: [0, 0, 0] }
+                    headStyles: { fillColor: [0, 0, 0] }
                 });
                 
-                // Total
                 const finalY = doc.lastAutoTable.finalY + 10;
                 doc.setFontSize(14); doc.setFont("helvetica", "bold");
                 doc.text(`GRAND TOTAL: ₹${grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 200, finalY, { align: "right" });
                 
-                doc.setFontSize(10); doc.setFont("helvetica", "italic");
-                doc.text("Thank you for your business!", 105, finalY + 20, { align: "center" });
-                
-                doc.save(`Invoice_${billNo}_${customerName.trim()}.pdf`);
+                doc.save(`Bill_${billNo}_${customerName.trim()}.pdf`);
             };
 
             const resetApp = () => {
@@ -268,13 +286,17 @@
                 setCart([]); setCustomerName(''); setShowModal(false); setIsBillGenerated(false);
             };
 
+            if (!fbReady) {
+                return <div className="min-h-screen flex items-center justify-center bg-slate-50 font-black text-slate-400 animate-pulse">LOADING...</div>;
+            }
+
             return (
                 <div className="min-h-screen bg-slate-50 pb-36 relative overflow-x-hidden">
                     <header className="bg-yellow-400 p-6 pt-8 text-center shadow-lg sticky top-0 z-30 rounded-b-[2.5rem]">
                         <button onClick={() => setLang(l => l === 'en' ? 'ta' : 'en')} className="absolute right-6 top-8 bg-black text-white p-2 px-4 rounded-full text-[10px] font-black uppercase tracking-widest tap-scale">
                             {lang === 'en' ? 'தமிழ்' : 'English'}
                         </button>
-                        <div className="animate-pulse opacity-80 text-[10px] font-black uppercase tracking-widest mb-1 text-slate-800">{T.subtitle}</div>
+                        <div className="opacity-80 text-[10px] font-black uppercase tracking-widest mb-1 text-slate-800">{T.subtitle}</div>
                         <h1 className="text-2xl font-black mb-1 leading-tight tracking-tight text-slate-900">{T.title}</h1>
                         <p className="text-[9px] font-bold leading-tight opacity-70 max-w-[200px] mx-auto uppercase mb-4">{T.address}</p>
                         <div className="bg-black/5 rounded-2xl p-2 inline-flex items-center gap-2">
@@ -283,108 +305,74 @@
                         </div>
                     </header>
 
-                    {showPasscodeScreen && (
-                        <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[100] flex items-center justify-center p-6">
-                            <div className="bg-white p-8 rounded-[3rem] w-full max-w-xs text-center space-y-6">
-                                <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center mx-auto shadow-lg">
-                                    <Icon name="key" className="w-8 h-8" />
-                                </div>
-                                <h3 className="font-black text-lg uppercase tracking-wider">{T.passcode}</h3>
-                                <form onSubmit={(e) => { e.preventDefault(); if(passcodeInput === OWNER_PASSCODE) { setShowPasscodeScreen(false); setShowDashboard(true); setPasscodeInput(''); } else setPasscodeInput(''); }} className="space-y-4">
-                                    <input type="password" className="w-full bg-slate-100 p-5 rounded-3xl text-center text-2xl tracking-[0.5em] font-black outline-none" maxLength={4} autoFocus value={passcodeInput} onChange={e => setPasscodeInput(e.target.value)} placeholder="••••" />
-                                    <div className="flex gap-2">
-                                        <button type="button" onClick={() => setShowPasscodeScreen(false)} className="flex-1 bg-slate-100 p-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest">Cancel</button>
-                                        <button type="submit" className="flex-1 bg-yellow-400 p-4 rounded-2xl font-black uppercase text-[10px] tracking-widest">Open</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    )}
-
-                    {showDashboard && (
-                        <div className="fixed inset-0 bg-slate-50 z-[90] flex flex-col pt-4">
-                            <header className="px-6 flex justify-between items-center mb-4">
-                                <div>
-                                    <h2 className="text-2xl font-black leading-tight uppercase tracking-tight">{T.history}</h2>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Manage recorded bills</p>
-                                </div>
-                                <button onClick={() => setShowDashboard(false)} className="bg-white p-4 rounded-full shadow-sm tap-scale"><Icon name="close" /></button>
-                            </header>
-                            <div className="flex-1 overflow-y-auto px-6 space-y-4 pb-10">
-                                {orders.map(order => (
-                                    <div key={order.id} className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div>
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">#{order.billNo}</p>
-                                                <h4 className="font-black text-lg uppercase">{order.customerName}</h4>
-                                            </div>
-                                            <button onClick={() => window.Firebase.deleteDoc(window.Firebase.doc(window.Firebase.db, 'artifacts', window.Firebase.appId, 'public', 'data', 'orders', order.id))} className="text-red-400 p-2"><Icon name="trash" /></button>
-                                        </div>
-                                        <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
-                                            <span className="text-[10px] font-black uppercase text-slate-400">Total</span>
-                                            <span className="font-black text-xl">₹{order.total.toLocaleString()}</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
                     <main className="p-5 space-y-6 max-w-lg mx-auto">
-                        {[
-                            { title: T.bend, type: 'bend', color: 'bg-yellow-400', s: pS, setS: setPS, w: pW, setW: setPW, data: PRODUCT_DATA.pipes, rate: PRODUCT_DATA.pipes.find(p=>p.size===pS)?.rates[pW], label: 'Bend' },
-                            { title: T.coupler, type: 'coupler', color: 'bg-blue-600', s: cS, setS: setCS, w: cW, setW: setCW, data: PRODUCT_DATA.coupler, rate: PRODUCT_DATA.coupler.find(p=>p.size===cS)?.rates[cW], label: 'Coupler' }
-                        ].map((section) => (
-                            <div key={section.type} className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
-                                <h2 className="text-[11px] font-black text-slate-400 mb-5 uppercase tracking-[0.2em]">{section.title}</h2>
-                                <div className="grid grid-cols-2 gap-4 mb-5">
-                                    <select className="bg-slate-100 p-4 rounded-2xl font-bold text-sm outline-none" value={section.s} onChange={e => section.setS(Number(e.target.value))}>
-                                        {section.data.map(p => <option key={p.size} value={p.size}>{p.size}mm</option>)}
-                                    </select>
-                                    <select className="bg-slate-100 p-4 rounded-2xl font-bold text-sm outline-none" value={section.w} onChange={e => section.setW(e.target.value)}>
-                                        {Object.keys(section.data.find(d => d.size === section.s).rates).map(r => <option key={r} value={r}>{r}</option>)}
-                                    </select>
-                                </div>
-                                <button onClick={() => addToCart(`${section.type}-${section.s}-${section.w}`, `${section.s}mm ${section.label} ${section.w}`, `${section.s}மிமீ ${section.title} ${section.w}`, section.rate)} className={`w-full ${section.color} ${section.color.includes('blue') ? 'text-white' : 'text-slate-900'} p-5 rounded-3xl font-black text-sm flex items-center justify-center gap-3 tap-scale shadow-lg`}>
-                                    <span className="bg-black/10 px-4 py-1.5 rounded-xl flex items-center gap-2">₹{(section.rate || 0).toFixed(2)}</span>
-                                    {T.add}
-                                    <Icon name="plus" className="w-4 h-4" />
-                                </button>
+                        {/* BEND SECTION */}
+                        <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
+                            <h2 className="text-[11px] font-black text-slate-400 mb-5 uppercase tracking-[0.2em]">{T.bend}</h2>
+                            <div className="grid grid-cols-2 gap-4 mb-5">
+                                <select className="bg-slate-100 p-4 rounded-2xl font-bold text-sm outline-none" value={pS} onChange={e => setPS(Number(e.target.value))}>
+                                    {PRODUCT_DATA.pipes.map(p => <option key={p.size} value={p.size}>{p.size}mm</option>)}
+                                </select>
+                                <select className="bg-slate-100 p-4 rounded-2xl font-bold text-sm outline-none" value={pW} onChange={e => setPW(e.target.value)}>
+                                    {Object.keys(PRODUCT_DATA.pipes.find(d => d.size === pS).rates).map(r => <option key={r} value={r}>{r}</option>)}
+                                </select>
                             </div>
-                        ))}
+                            <button onClick={() => addToCart(`bend-${pS}-${pW}`, `${pS}mm Bend ${pW}`, `${pS}மிமீ பெண்ட் ${pW}`, PRODUCT_DATA.pipes.find(p=>p.size===pS)?.rates[pW])} className="w-full bg-yellow-400 p-5 rounded-3xl font-black text-sm flex items-center justify-center gap-3 tap-scale shadow-lg">
+                                <span className="bg-black/10 px-4 py-1.5 rounded-xl">₹{PRODUCT_DATA.pipes.find(p=>p.size===pS)?.rates[pW]?.toFixed(2)}</span>
+                                {T.add}
+                                <Icon name="plus" className="w-4 h-4" />
+                            </button>
+                        </div>
 
+                        {/* COUPLER SECTION */}
+                        <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
+                            <h2 className="text-[11px] font-black text-slate-400 mb-5 uppercase tracking-[0.2em]">{T.coupler}</h2>
+                            <div className="grid grid-cols-2 gap-4 mb-5">
+                                <select className="bg-slate-100 p-4 rounded-2xl font-bold text-sm outline-none" value={cS} onChange={e => setCS(Number(e.target.value))}>
+                                    {PRODUCT_DATA.coupler.map(p => <option key={p.size} value={p.size}>{p.size}mm</option>)}
+                                </select>
+                                <select className="bg-slate-100 p-4 rounded-2xl font-bold text-sm outline-none" value={cW} onChange={e => setCW(e.target.value)}>
+                                    {Object.keys(PRODUCT_DATA.coupler.find(d => d.size === cS).rates).map(r => <option key={r} value={r}>{r}</option>)}
+                                </select>
+                            </div>
+                            <button onClick={() => addToCart(`coupler-${cS}-${cW}`, `${cS}mm Coupler ${cW}`, `${cS}மிமீ கப்ளர் ${cW}`, PRODUCT_DATA.coupler.find(p=>p.size===cS)?.rates[cW])} className="w-full bg-blue-600 text-white p-5 rounded-3xl font-black text-sm flex items-center justify-center gap-3 tap-scale shadow-lg">
+                                <span className="bg-white/10 px-4 py-1.5 rounded-xl">₹{PRODUCT_DATA.coupler.find(p=>p.size===cS)?.rates[cW]?.toFixed(2)}</span>
+                                {T.add}
+                                <Icon name="plus" className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {/* JET SECTION */}
                         <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
                             <h2 className="text-[11px] font-black text-slate-400 mb-5 uppercase tracking-[0.2em]">{T.jet}</h2>
                             <select className="w-full bg-slate-100 p-4 rounded-2xl font-bold text-sm outline-none mb-5" value={jN} onChange={e => setJN(e.target.value)}>
                                 {PRODUCT_DATA.jetFootvale.map(j => <option key={j.name} value={j.name}>{j.name}</option>)}
                             </select>
-                            <button onClick={() => addToCart(`j-${jN}`, `Jet ${jN}`, `ஜெட் ${jN}`, PRODUCT_DATA.jetFootvale.find(j=>j.name===jN)?.rate)} className="w-full bg-slate-900 text-white p-5 rounded-3xl font-black text-sm flex items-center justify-center gap-3 tap-scale transition-all">
-                                <span className="bg-white/10 px-4 py-1.5 rounded-xl flex items-center gap-2">₹{(PRODUCT_DATA.jetFootvale.find(j=>j.name===jN)?.rate || 0).toFixed(2)}</span>
+                            <button onClick={() => addToCart(`jet-${jN}`, `Jet ${jN}`, `ஜெட் ${jN}`, PRODUCT_DATA.jetFootvale.find(j=>j.name===jN)?.rate)} className="w-full bg-slate-900 text-white p-5 rounded-3xl font-black text-sm flex items-center justify-center gap-3 tap-scale">
+                                <span className="bg-white/10 px-4 py-1.5 rounded-xl">₹{PRODUCT_DATA.jetFootvale.find(j=>j.name===jN)?.rate?.toFixed(2)}</span>
                                 {T.add}
                                 <Icon name="plus" className="w-4 h-4" />
                             </button>
                         </div>
                     </main>
 
-                    <div className="fixed bottom-4 left-6 z-40 opacity-20 hover:opacity-100 transition-opacity">
-                        <button onClick={() => setShowPasscodeScreen(true)} className="p-3 bg-slate-200 rounded-full tap-scale"><Icon name="key" className="w-3 h-3 text-slate-500" /></button>
-                    </div>
-
-                    {cart.length > 0 && !showModal && !showDashboard && (
+                    {/* ACTIONS BAR */}
+                    {cart.length > 0 && !showModal && (
                         <div className="fixed bottom-8 left-6 right-6 z-40">
                             <button onClick={() => setShowModal(true)} className="w-full bg-slate-900 text-white p-5 rounded-full shadow-2xl flex justify-between items-center px-8 border-4 border-yellow-400 tap-scale">
                                 <div className="text-left">
                                     <p className="text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-1">{T.total}</p>
                                     <p className="font-black text-xl">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
                                 </div>
-                                <div className="flex items-center gap-3 bg-yellow-400 text-slate-900 px-6 py-3 rounded-full">
-                                    <span className="uppercase text-[11px] font-black tracking-widest">{T.viewBill}</span>
+                                <div className="flex items-center gap-3 bg-yellow-400 text-slate-900 px-6 py-3 rounded-full font-black text-[11px] uppercase tracking-widest">
+                                    {T.viewBill}
                                     <Icon name="chevronRight" className="w-4 h-4" />
                                 </div>
                             </button>
                         </div>
                     )}
 
+                    {/* CHECKOUT MODAL */}
                     {showModal && (
                         <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 flex items-end justify-center">
                             <div className="bg-white w-full max-w-md rounded-t-[3rem] p-8 pb-12 space-y-6 shadow-2xl animate-slide-up max-h-[95vh] overflow-y-auto">
@@ -418,18 +406,64 @@
                                         <Icon name="check" /> Finalize Bill
                                     </button>
                                 ) : (
-                                    <div className="space-y-4 animate-scale-in">
+                                    <div className="space-y-4">
                                         <div className="grid grid-cols-2 gap-4">
-                                            <button onClick={sendWhatsApp} className="w-full bg-[#25D366] text-white p-5 rounded-3xl font-black flex flex-col items-center justify-center gap-1 tap-scale">
+                                            <button onClick={sendWhatsApp} className="bg-[#25D366] text-white p-5 rounded-3xl font-black flex flex-col items-center gap-1 tap-scale">
                                                 <Icon name="whatsapp" /> <span className="text-[10px] uppercase">WhatsApp</span>
                                             </button>
-                                            <button onClick={downloadPDF} className="w-full bg-blue-500 text-white p-5 rounded-3xl font-black flex flex-col items-center justify-center gap-1 tap-scale">
+                                            <button onClick={downloadPDF} className="bg-blue-500 text-white p-5 rounded-3xl font-black flex flex-col items-center gap-1 tap-scale">
                                                 <Icon name="download" /> <span className="text-[10px] uppercase">PDF</span>
                                             </button>
                                         </div>
                                         <button onClick={resetApp} className="w-full bg-slate-900 text-white p-5 rounded-3xl font-black uppercase text-[10px] tracking-widest">{T.newBill}</button>
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Hidden Admin Key */}
+                    <div className="fixed bottom-4 left-6 z-40 opacity-20">
+                        <button onClick={() => setShowPasscodeScreen(true)} className="p-3 bg-slate-200 rounded-full"><Icon name="key" className="w-3 h-3" /></button>
+                    </div>
+
+                    {/* PASSCODE SCREEN */}
+                    {showPasscodeScreen && (
+                        <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[100] flex items-center justify-center p-6">
+                            <div className="bg-white p-8 rounded-[3rem] w-full max-w-xs text-center space-y-6">
+                                <h3 className="font-black text-lg uppercase tracking-wider">{T.passcode}</h3>
+                                <input type="password" className="w-full bg-slate-100 p-5 rounded-3xl text-center text-2xl tracking-[0.5em] font-black outline-none" maxLength={4} autoFocus value={passcodeInput} onChange={e => setPasscodeInput(e.target.value)} placeholder="••••" />
+                                <div className="flex gap-2">
+                                    <button onClick={() => setShowPasscodeScreen(false)} className="flex-1 bg-slate-100 p-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest">Cancel</button>
+                                    <button onClick={() => { if(passcodeInput === OWNER_PASSCODE) { setShowPasscodeScreen(false); setShowDashboard(true); } setPasscodeInput(''); }} className="flex-1 bg-yellow-400 p-4 rounded-2xl font-black uppercase text-[10px] tracking-widest">Open</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* DASHBOARD */}
+                    {showDashboard && (
+                        <div className="fixed inset-0 bg-slate-50 z-[90] flex flex-col pt-4">
+                            <header className="px-6 flex justify-between items-center mb-4">
+                                <h2 className="text-2xl font-black uppercase tracking-tight">{T.history}</h2>
+                                <button onClick={() => setShowDashboard(false)} className="bg-white p-4 rounded-full shadow-sm"><Icon name="close" /></button>
+                            </header>
+                            <div className="flex-1 overflow-y-auto px-6 space-y-4 pb-10">
+                                {orders.map(order => (
+                                    <div key={order.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-200">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="text-[10px] font-black text-slate-400">#{order.billNo}</p>
+                                                <h4 className="font-black text-lg uppercase">{order.customerName}</h4>
+                                            </div>
+                                            <button onClick={() => window.Firebase.deleteDoc(window.Firebase.doc(window.Firebase.db, 'artifacts', window.Firebase.appId, 'public', 'data', 'orders', order.id))} className="text-red-400 p-2"><Icon name="trash" /></button>
+                                        </div>
+                                        <div className="mt-4 pt-4 border-t flex justify-between font-black">
+                                            <span className="text-slate-400 text-[10px] uppercase">Total</span>
+                                            <span className="text-xl">₹{order.total.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     )}
