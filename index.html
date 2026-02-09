@@ -1,685 +1,320 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { initializeApp } from 'firebase/app';
-import { 
-  getFirestore, collection, addDoc, onSnapshot, 
-  query, orderBy, serverTimestamp 
-} from 'firebase/firestore';
-import { 
-  getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken 
-} from 'firebase/auth';
-import { 
-  ShoppingBag, Printer, Send, Package, ClipboardList,
-  ChevronDown, PlusCircle, Minus, Plus, Lock, X, Trash2,
-  ShoppingCart, History, Languages, RotateCw, FileText, Download,
-  Eye, CheckCircle2
-} from 'lucide-react';
-
-// --- CONFIGURATION ---
-const firebaseConfig = JSON.parse(__firebase_config);
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'sri-vinayaga-laber-works-v1';
-
-const OWNER_WHATSAPP = "918643861100";
-const OWNER_PASSWORD = "Owner@123";
-
-// --- TRANSLATIONS ---
-const UI_TEXT = {
-  en: {
-    title: "SRI VINAYAGA LABER WORKS",
-    subtitle: "Blessings of Sri Pachaiamman",
-    pvcPipes: "Bend",
-    jetFootvale: "Jet Footvale",
-    longCoupler: "Long Coupler",
-    pipeSize: "Size",
-    weight: "Weight / Type",
-    variant: "Select Variant",
-    rate: "Rate",
-    unitPrice: "Unit Price",
-    addPipe: "Add Bend",
-    add: "Add",
-    addCoupler: "Add Coupler",
-    currentBill: "Current Bill",
-    clearAll: "Clear All",
-    productsInCart: "Products in Cart",
-    grandTotal: "Grand Total",
-    customerName: "Customer Name",
-    enterName: "Enter Name Here",
-    generateBill: "Generate & Send Bill",
-    savePdf: "Download PDF / Print",
-    whatsappNote: "A copy will be sent to the owner on WhatsApp.",
-    ownerLogin: "Owner Records",
-    password: "Enter Owner Password",
-    login: "Login",
-    salesHistory: "Sales History",
-    logout: "Logout",
-    noRecords: "No records found",
-    shop: "Shop",
-    owner: "Owner",
-    billNo: "Bill No",
-    preview: "Preview Invoice",
-    close: "Close"
-  },
-  ta: {
-    title: "ஸ்ரீ விநாயகா லேபர் ஒர்க்ஸ்",
-    subtitle: "ஸ்ரீ பச்சையம்மன் துணை",
-    pvcPipes: "பெண்ட் (Bend)",
-    jetFootvale: "ஜெட் புட்வால்வ்",
-    longCoupler: "லாங் கப்ளர்",
-    pipeSize: "அளவு",
-    weight: "எடை / வகை",
-    variant: "வகையைத் தேர்ந்தெடுக்கவும்",
-    rate: "விலை",
-    unitPrice: "ஒற்றை விலை",
-    addPipe: "பெண்ட் சேர்க்கவும்",
-    add: "சேர்க்கவும்",
-    addCoupler: "கப்ளர் சேர்க்கவும்",
-    currentBill: "தற்போதைய பில்",
-    clearAll: "அனைத்தையும் நீக்கு",
-    productsInCart: "தேர்வு செய்த பொருட்கள்",
-    grandTotal: "மொத்த தொகை",
-    customerName: "வாடிக்கையாளர் பெயர்",
-    enterName: "பெயரை உள்ளிடவும்",
-    generateBill: "பில் தயாரித்து அனுப்பவும்",
-    savePdf: "PDF பதிவிறக்கம் / பிரிண்ட்",
-    whatsappNote: "நகல் வாட்ஸ்அப் மூலம் உரிமையாளருக்கு அனுப்பப்படும்.",
-    ownerLogin: "உரிமையாளர் பதிவுகள்",
-    password: "கடவுச்சொல்லை உள்ளிடவும்",
-    login: "உள்நுழைய",
-    salesHistory: "விற்பனை வரலாறு",
-    logout: "வெளியேறு",
-    noRecords: "பதிவுகள் எதுவும் இல்லை",
-    shop: "கடை",
-    owner: "உரிமையாளர்",
-    billNo: "பில் எண்",
-    preview: "பில் சரிபார்க்க",
-    close: "மூடு"
-  }
-};
-
-const PRODUCT_DATA = {
-  pipes: [
-    { size: 20, pieces: 40, rates: { "10 Kgs": 1.15, "15 Kgs": 1.20 } },
-    { size: 25, pieces: 38, rates: { "10 Kgs": 1.44, "15 Kgs": 1.70 } },
-    { size: 32, pieces: 30, rates: { "10 Kgs": 2.30, "15 Kgs": 2.50 } },
-    { size: 40, pieces: 26, rates: { "6 Kgs": 2.50, "10 Kgs": 3.50, "15 Kgs": 3.50 } },
-    { size: 50, pieces: 20, rates: { "6 Kgs": 4.00, "10 Kgs": 4.50, "15 Kgs": 4.50, "5 Bend": 6.10 } },
-    { size: 63, pieces: 17, rates: { "4 Kgs": 5.00, "6 Kgs": 6.00, "5 Bend": 6.90 } },
-    { size: 75, pieces: 15, rates: { "4 Kgs": 6.00, "6 Kgs": 7.00, "5 Bend": 8.70 } },
-    { size: 90, pieces: 13, rates: { "4 Kgs": 8.00, "6 Kgs": 9.00, "5 Bend": 10.62 } },
-    { size: 110, pieces: 11, rates: { "4 Kgs": 11.00, "6 Kgs": 12.65, "5 Bend": 12.65 } },
-    { size: 140, pieces: 8, rates: { "4 Kgs": 65.00, "6 Kgs": 80.00, "5 Bend": 115.00 } },
-    { size: 160, pieces: 6, rates: { "4 Kgs": 100.00, "6 Kgs": 115.00, "5 Bend": 172.50 } },
-    { size: 180, pieces: 5, rates: { "4 Kgs": 170.00, "6 Kgs": 195.50 } },
-    { size: 200, pieces: 5, rates: { "4 Kgs": 220.00, "6 Kgs": 245.50 } },
-  ],
-  jetFootvale: [
-    { name: "50*6", rate: 25.00 },
-    { name: "50*15", rate: 30.00 },
-    { name: "50*32", rate: 30.00 },
-    { name: "50*40", rate: 40.00 },
-    { name: "63*6", rate: 40.00 },
-  ],
-  longCoupler: [
-    { size: 32, rates: { "10 KG": 4.00, "15 KG": 5.00 } },
-    { size: 40, rates: { "6 KG": 4.00, "10 KG": 5.00 } },
-    { size: 50, rates: { "6 KG": 5.00 } },
-    { size: 63, rates: { "4 KG": 6.50, "6 KG": 7.00 } },
-    { size: 75, rates: { "4 KG": 7.50, "6 KG": 8.00 } },
-    { size: 90, rates: { "4 KG": 8.50, "6 KG": 9.00 } },
-    { size: 110, rates: { "4 KG": 9.50, "6 KG": 10.00 } },
-    { size: 140, rates: { "4 KG": 15.50, "6 KG": 18.00 } },
-    { size: 160, rates: { "4 KG": 18.50, "6 KG": 20.00 } },
-  ]
-};
-
-export default function App() {
-  const [lang, setLang] = useState('en');
-  const [user, setUser] = useState(null);
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
-  const [loginPassword, setLoginPassword] = useState('');
-  const [cart, setCart] = useState([]);
-  const [view, setView] = useState('shop');
-  const [orders, setOrders] = useState([]);
-  const [customerName, setCustomerName] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-
-  const T = UI_TEXT[lang];
-
-  // Selection States
-  const [selectedPipeSize, setSelectedPipeSize] = useState(PRODUCT_DATA.pipes[0].size);
-  const [selectedPipeWeight, setSelectedPipeWeight] = useState(Object.keys(PRODUCT_DATA.pipes[0].rates)[0]);
-  const [selectedJetName, setSelectedJetName] = useState(PRODUCT_DATA.jetFootvale[0].name);
-  const [selectedCouplerSize, setSelectedCouplerSize] = useState(PRODUCT_DATA.longCoupler[0].size);
-  const [selectedCouplerWeight, setSelectedCouplerWeight] = useState(Object.keys(PRODUCT_DATA.longCoupler[0].rates)[0]);
-
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-      } catch (err) { console.error("Auth error", err); }
-    };
-    initAuth();
-    const unsubscribe = onAuthStateChanged(auth, setUser);
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!user || !isAdminLoggedIn || view !== 'admin') {
-      setOrders([]);
-      return;
-    }
-    const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    }, (err) => console.error("Firestore error", err));
-    return () => unsubscribe();
-  }, [user, isAdminLoggedIn, view]);
-
-  const currentPipe = PRODUCT_DATA.pipes.find(p => p.size === selectedPipeSize);
-  const currentJet = PRODUCT_DATA.jetFootvale.find(j => j.name === selectedJetName);
-  const currentCoupler = PRODUCT_DATA.longCoupler.find(c => c.size === selectedCouplerSize);
-
-  const addToCart = (product) => {
-    setCart(prev => {
-      const exists = prev.find(item => item.id === product.id);
-      if (exists) return prev.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item);
-      return [...prev, { ...product, qty: 1 }];
-    });
-  };
-
-  const updateQty = (id, delta) => {
-    setCart(prev => prev.map(item => item.id === id ? { ...item, qty: Math.max(1, item.qty + delta) } : item));
-  };
-
-  const removeItem = (id) => {
-    setCart(prev => prev.filter(item => item.id !== id));
-  };
-
-  const handleCheckout = async () => {
-    if (!customerName) {
-      alert(lang === 'ta' ? "வாடிக்கையாளர் பெயரை உள்ளிடவும்." : "Please enter customer name.");
-      return;
-    }
-    if (cart.length === 0) return;
-    
-    setIsProcessing(true);
-    const total = cart.reduce((sum, item) => sum + (item.rate * item.qty), 0);
-    const orderData = { 
-      customerName, 
-      items: cart, 
-      total, 
-      createdAt: serverTimestamp(),
-      userId: user?.uid || 'anonymous'
-    };
-
-    try {
-      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), orderData);
-      const msg = `*SRI VINAYAGA LABER WORKS*\n\n*CUSTOMER:* ${customerName.toUpperCase()}\n*DATE:* ${new Date().toLocaleDateString()}\n---------------------------\n${cart.map(i => `${i.label}\nQty: ${i.qty} x ₹${i.rate} = ₹${(i.qty * i.rate).toFixed(2)}`).join('\n\n')}\n---------------------------\n*TOTAL BILL: ₹${total.toFixed(2)}*`;
-      window.open(`https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(msg)}`, '_blank');
-      setCart([]); 
-      setCustomerName(''); 
-      alert(lang === 'ta' ? "பில் சேமிக்கப்பட்டது!" : "Bill saved successfully!");
-    } catch (err) { 
-      alert("Error: " + err.message); 
-    } finally { 
-      setIsProcessing(false); 
-    }
-  };
-
-  const handlePrint = () => {
-    if (!customerName) {
-      alert(lang === 'ta' ? "வாடிக்கையாளர் பெயரை உள்ளிடவும்." : "Please enter customer name.");
-      return;
-    }
-    // Set a small timeout to ensure the UI updates before the print dialog freezes the thread
-    setTimeout(() => {
-        window.print();
-    }, 100);
-  };
-
-  const totalAmount = cart.reduce((sum, item) => sum + (item.rate * item.qty), 0);
-
-  const SelectWrapper = ({ label, children }) => (
-    <div className="relative group">
-      <label className="text-[10px] font-bold text-slate-400 absolute left-3 top-2 uppercase tracking-tight z-10">
-        {label}
-      </label>
-      {children}
-      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none mt-1" size={16}/>
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 font-sans selection:bg-yellow-200">
-      
-      {/* PROFESSIONAL PRINT LAYOUT */}
-      <div id="print-area" className="hidden print:block p-10 bg-white">
-          <div className="text-center border-b-2 border-black pb-4 mb-6">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">{T.subtitle}</p>
-              <h1 className="text-3xl font-black text-black leading-tight">{T.title}</h1>
-              <p className="text-[10px] uppercase font-bold text-gray-600">Salem Main Road, Near Bus Stand, Attur</p>
-          </div>
-
-          <div className="flex justify-between mb-8 text-sm">
-              <div>
-                  <p className="text-[10px] uppercase font-black text-gray-400">Customer Name</p>
-                  <p className="text-lg font-black uppercase text-black">{customerName || "Cash Customer"}</p>
-              </div>
-              <div className="text-right">
-                  <p className="text-[10px] uppercase font-black text-gray-400">Billing Info</p>
-                  <p className="font-bold">Date: {new Date().toLocaleDateString()}</p>
-                  <p className="font-bold">Bill No: SV-{Date.now().toString().slice(-6)}</p>
-              </div>
-          </div>
-
-          <table className="w-full text-sm">
-              <thead className="border-b-2 border-black">
-                  <tr className="text-left font-black uppercase text-[10px] tracking-widest">
-                      <th className="py-3 px-1">Items</th>
-                      <th className="py-3 px-1 text-center">Rate</th>
-                      <th className="py-3 px-1 text-center">Qty</th>
-                      <th className="py-3 px-1 text-right">Subtotal</th>
-                  </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                  {cart.map((item, idx) => (
-                      <tr key={idx}>
-                          <td className="py-3 px-1 font-bold">{item.label}</td>
-                          <td className="py-3 px-1 text-center">₹{item.rate.toFixed(2)}</td>
-                          <td className="py-3 px-1 text-center">{item.qty}</td>
-                          <td className="py-3 px-1 text-right font-black">₹{(item.qty * item.rate).toFixed(2)}</td>
-                      </tr>
-                  ))}
-              </tbody>
-              <tfoot className="border-t-2 border-black">
-                  <tr>
-                      <td colSpan="3" className="py-4 text-right font-black uppercase text-xs">Total Amount:</td>
-                      <td className="py-4 text-right text-xl font-black">₹{totalAmount.toFixed(2)}</td>
-                  </tr>
-              </tfoot>
-          </table>
-
-          <div className="mt-20 flex justify-between items-end border-t pt-8 text-[10px] font-bold uppercase text-gray-400">
-              <p className="max-w-[200px]">Goods sold are not returnable. This is a computer generated invoice.</p>
-              <div className="text-center">
-                  <div className="w-40 border-b border-black mb-2"></div>
-                  <p className="text-black font-black">Authorized Signature</p>
-              </div>
-          </div>
-      </div>
-
-      <header className="bg-yellow-400 p-4 sticky top-0 z-50 shadow-sm print:hidden">
-        <div className="max-w-xl mx-auto flex flex-col items-center justify-center relative">
-          <div className="text-center">
-            <h2 className="text-[9px] font-bold text-slate-800 uppercase tracking-widest opacity-80 leading-none mb-1">{T.subtitle}</h2>
-            <h1 className="text-lg font-black tracking-tighter text-slate-900 leading-none">{T.title}</h1>
-          </div>
-          <button 
-            onClick={() => setLang(lang === 'en' ? 'ta' : 'en')}
-            className="absolute right-0 top-1/2 -translate-y-1/2 bg-white/30 p-2 rounded-full border border-black/10 flex items-center gap-1"
-          >
-            <Languages size={14} />
-            <span className="text-[10px] font-black uppercase">{lang === 'en' ? 'தமிழ்' : 'English'}</span>
-          </button>
-        </div>
-      </header>
-
-      <main className="max-w-xl mx-auto p-4 space-y-6 print:hidden">
-        {view === 'shop' ? (
-          <>
-            <div className="space-y-6">
-                {/* BENDS SECTION */}
-                <section className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200">
-                <div className="flex items-center gap-3 mb-5">
-                    <div className="bg-yellow-400 p-2 rounded-xl text-slate-900"><RotateCw size={20}/></div>
-                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">{T.pvcPipes}</h3>
-                </div>
-                <div className="space-y-4">
-                    <SelectWrapper label={T.pipeSize}>
-                    <select 
-                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl pt-7 pb-3 px-3 font-black text-lg outline-none appearance-none focus:border-yellow-400 transition-colors"
-                        value={selectedPipeSize}
-                        onChange={(e) => {
-                            const newSize = parseInt(e.target.value);
-                            setSelectedPipeSize(newSize);
-                            const p = PRODUCT_DATA.pipes.find(x => x.size === newSize);
-                            setSelectedPipeWeight(Object.keys(p.rates)[0]);
-                        }}
-                    >
-                        {PRODUCT_DATA.pipes.map(p => <option key={p.size} value={p.size}>{p.size}mm ({p.pieces} Pcs)</option>)}
-                    </select>
-                    </SelectWrapper>
-                    <div className="grid grid-cols-2 gap-3">
-                    <SelectWrapper label={T.weight}>
-                        <select 
-                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl pt-7 pb-3 px-3 font-black text-lg outline-none appearance-none focus:border-yellow-400 transition-colors"
-                        value={selectedPipeWeight}
-                        onChange={(e) => setSelectedPipeWeight(e.target.value)}
-                        >
-                        {currentPipe && Object.keys(currentPipe.rates).map(v => <option key={v} value={v}>{v}</option>)}
-                        </select>
-                    </SelectWrapper>
-                    <div className="bg-slate-900 text-white rounded-2xl p-3 flex flex-col items-center justify-center">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">{T.rate}</span>
-                        <span className="text-xl font-black">₹{currentPipe?.rates[selectedPipeWeight]}</span>
-                    </div>
-                    </div>
-                    <button 
-                    onClick={() => addToCart({ 
-                        id: `bend-${selectedPipeSize}-${selectedPipeWeight}`, 
-                        label: `${selectedPipeSize}mm Bend (${selectedPipeWeight})`, 
-                        rate: currentPipe.rates[selectedPipeWeight] 
-                    })}
-                    className="w-full bg-yellow-400 text-slate-900 py-4.5 rounded-2xl font-black text-lg flex items-center justify-center gap-3 shadow-md hover:bg-yellow-500 active:scale-95 transition-all"
-                    >
-                    <Plus size={22}/> {T.addPipe}
-                    </button>
-                </div>
-                </section>
-
-                {/* JET FOOTVALE */}
-                <section className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200">
-                <div className="flex items-center gap-3 mb-5">
-                    <div className="bg-slate-900 p-2 rounded-xl text-white"><Package size={20}/></div>
-                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">{T.jetFootvale}</h3>
-                </div>
-                <div className="space-y-4">
-                    <SelectWrapper label={T.variant}>
-                    <select 
-                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl pt-7 pb-3 px-3 font-black text-lg outline-none appearance-none focus:border-yellow-400 transition-colors"
-                        value={selectedJetName}
-                        onChange={(e) => setSelectedJetName(e.target.value)}
-                    >
-                        {PRODUCT_DATA.jetFootvale.map(j => <option key={j.name} value={j.name}>{j.name}</option>)}
-                    </select>
-                    </SelectWrapper>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-slate-100 rounded-2xl p-4 flex flex-col items-center">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase">{T.unitPrice}</span>
-                            <span className="text-xl font-black">₹{currentJet?.rate}</span>
-                        </div>
-                        <button 
-                            onClick={() => addToCart({ id: `jet-${selectedJetName}`, label: `Jet Footvale ${selectedJetName}`, rate: currentJet.rate })}
-                            className="w-full bg-slate-900 text-white rounded-2xl font-black flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg"
-                        >
-                            <Plus size={20}/> {T.add}
-                        </button>
-                    </div>
-                </div>
-                </section>
-
-                {/* LONG COUPLER */}
-                <section className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200">
-                <div className="flex items-center gap-3 mb-5">
-                    <div className="bg-yellow-400 p-2 rounded-xl text-slate-900"><Package size={20}/></div>
-                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">{T.longCoupler}</h3>
-                </div>
-                <div className="space-y-4">
-                    <SelectWrapper label={T.pipeSize}>
-                    <select 
-                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl pt-7 pb-3 px-3 font-black text-lg outline-none appearance-none focus:border-yellow-400 transition-colors"
-                        value={selectedCouplerSize}
-                        onChange={(e) => {
-                            const newSize = parseInt(e.target.value);
-                            setSelectedCouplerSize(newSize);
-                            const c = PRODUCT_DATA.longCoupler.find(x => x.size === newSize);
-                            setSelectedCouplerWeight(Object.keys(c.rates)[0]);
-                        }}
-                    >
-                        {PRODUCT_DATA.longCoupler.map(c => <option key={c.size} value={c.size}>{c.size}mm</option>)}
-                    </select>
-                    </SelectWrapper>
-                    <div className="grid grid-cols-2 gap-3">
-                        <SelectWrapper label={T.weight}>
-                            <select 
-                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl pt-7 pb-3 px-3 font-black text-lg outline-none appearance-none focus:border-yellow-400 transition-colors"
-                            value={selectedCouplerWeight}
-                            onChange={(e) => setSelectedCouplerWeight(e.target.value)}
-                            >
-                            {currentCoupler && Object.keys(currentCoupler.rates).map(v => <option key={v} value={v}>{v}</option>)}
-                            </select>
-                        </SelectWrapper>
-                        <div className="bg-slate-100 rounded-2xl p-3 flex flex-col items-center justify-center border border-slate-200">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase">{T.rate}</span>
-                            <span className="text-xl font-black">₹{currentCoupler?.rates[selectedCouplerWeight]}</span>
-                        </div>
-                    </div>
-                    <button 
-                    onClick={() => addToCart({ 
-                        id: `coupler-${selectedCouplerSize}-${selectedCouplerWeight}`, 
-                        label: `${selectedCouplerSize}mm Coupler (${selectedCouplerWeight})`, 
-                        rate: currentCoupler.rates[selectedCouplerWeight] 
-                    })}
-                    className="w-full bg-slate-900 text-white py-4.5 rounded-2xl font-black text-lg flex items-center justify-center gap-3 shadow-md active:scale-95 transition-all"
-                    >
-                    <PlusCircle size={22}/> {T.addCoupler}
-                    </button>
-                </div>
-                </section>
-            </div>
-
-            {/* BILLING AREA */}
-            {cart.length > 0 && (
-                <div className="space-y-6 pt-10 border-t-4 border-slate-200 animate-in fade-in slide-in-from-bottom-8">
-                    <div className="flex items-center justify-between px-2">
-                        <h3 className="text-xl font-black uppercase tracking-tight text-slate-900 flex items-center gap-2">
-                            <ShoppingCart size={24} className="text-yellow-500" /> {T.currentBill}
-                        </h3>
-                        <button onClick={() => setCart([])} className="text-red-500 font-bold text-xs flex items-center gap-1 bg-red-50 px-3 py-2 rounded-xl">
-                            <Trash2 size={14}/> {T.clearAll}
-                        </button>
-                    </div>
-
-                    <div className="bg-white rounded-[2rem] border-2 border-slate-200 shadow-xl overflow-hidden">
-                        <div className="p-4 bg-slate-50 border-b border-slate-100">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{T.productsInCart}</span>
-                        </div>
-                        {cart.map((item) => (
-                            <div key={item.id} className="p-5 border-b border-slate-50 flex items-center gap-4">
-                                <div className="flex-1">
-                                    <h4 className="font-black text-slate-800 leading-tight text-base">{item.label}</h4>
-                                    <span className="text-xs font-bold text-slate-400">₹{item.rate} x {item.qty}</span>
-                                </div>
-                                <div className="flex items-center gap-3 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
-                                    <button onClick={() => updateQty(item.id, -1)} className="p-1 text-slate-400"><Minus size={16}/></button>
-                                    <span className="font-black w-6 text-center text-sm">{item.qty}</span>
-                                    <button onClick={() => updateQty(item.id, 1)} className="p-1 text-slate-400"><Plus size={16}/></button>
-                                </div>
-                                <div className="font-black text-right min-w-[80px] text-lg">₹{(item.qty * item.rate).toFixed(2)}</div>
-                                <button onClick={() => removeItem(item.id)} className="text-slate-200 hover:text-red-500"><X size={18}/></button>
-                            </div>
-                        ))}
-                        <div className="p-6 bg-slate-900 text-white flex justify-between items-center">
-                            <div className="flex flex-col">
-                                <span className="font-bold uppercase tracking-widest text-[10px] opacity-60">{T.grandTotal}</span>
-                                <span className="text-3xl font-black leading-none">₹{totalAmount.toFixed(2)}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-[2rem] border-2 border-slate-200 shadow-xl space-y-4">
-                        <div className="relative">
-                            <label className="text-[10px] font-black text-slate-400 absolute left-4 top-3 uppercase tracking-widest">{T.customerName}</label>
-                            <input 
-                                type="text" value={customerName} onChange={e => setCustomerName(e.target.value)}
-                                placeholder={T.enterName}
-                                className="w-full bg-slate-50 pt-8 pb-4 px-4 rounded-2xl border-2 border-transparent focus:border-yellow-400 font-black text-lg outline-none transition-all"
-                            />
-                        </div>
-                        
-                        <div className="grid grid-cols-1 gap-3">
-                            <button 
-                                onClick={handleCheckout} 
-                                disabled={isProcessing || !customerName} 
-                                className="w-full bg-green-500 text-white py-5 rounded-2xl font-black text-xl flex items-center justify-center gap-3 shadow-lg hover:bg-green-600 disabled:opacity-50 active:scale-95 transition-all"
-                            >
-                                <Send size={24}/> {isProcessing ? "..." : T.generateBill}
-                            </button>
-                            
-                            <button 
-                                onClick={() => setShowPreview(true)} 
-                                className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xl flex items-center justify-center gap-3 active:scale-95 shadow-sm"
-                            >
-                                <Eye size={22}/> {T.preview}
-                            </button>
-                        </div>
-                        <p className="text-[9px] text-center text-slate-400 font-bold uppercase tracking-widest">{T.whatsappNote}</p>
-                    </div>
-                </div>
-            )}
-          </>
-        ) : (
-          /* ADMIN VIEW */
-          <div className="space-y-4 animate-in fade-in">
-             {!isAdminLoggedIn ? (
-               <div className="max-w-sm mx-auto bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-200 mt-10">
-                  <div className="flex flex-col items-center gap-4 mb-8">
-                    <div className="bg-yellow-400 p-5 rounded-full text-slate-900">
-                      <Lock size={32} />
-                    </div>
-                    <h3 className="text-2xl font-black text-slate-800 text-center">{T.ownerLogin}</h3>
-                  </div>
-                  <form onSubmit={(e) => {
-                    e.preventDefault();
-                    if (loginPassword === OWNER_PASSWORD) {
-                      setIsAdminLoggedIn(true);
-                      setLoginPassword('');
-                    } else {
-                      alert("Incorrect Password");
-                    }
-                  }} className="space-y-4">
-                    <input 
-                      type="password" 
-                      value={loginPassword} 
-                      onChange={e => setLoginPassword(e.target.value)}
-                      placeholder={T.password}
-                      className="w-full px-6 py-4 rounded-2xl border-2 border-slate-100 font-black outline-none focus:border-yellow-400"
-                    />
-                    <button type="submit" className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black shadow-lg">{T.login}</button>
-                  </form>
-               </div>
-             ) : (
-               <>
-                 <div className="flex justify-between items-center px-2">
-                    <h3 className="text-xl font-black flex items-center gap-2"><History/> {T.salesHistory}</h3>
-                    <button onClick={() => setIsAdminLoggedIn(false)} className="text-red-500 font-black text-[10px] uppercase bg-red-50 px-4 py-2 rounded-xl">{T.logout}</button>
-                 </div>
-
-                 {orders.length === 0 ? (
-                   <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
-                      <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">{T.noRecords}</p>
-                   </div>
-                 ) : (
-                   <div className="space-y-4">
-                    {orders.map(o => (
-                        <div key={o.id} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <h4 className="font-black text-lg text-slate-800 uppercase leading-tight">{o.customerName}</h4>
-                                    <span className="text-[10px] font-bold text-slate-400">{o.createdAt?.toDate().toLocaleString()}</span>
-                                </div>
-                                <span className="font-black text-green-600 text-xl">₹{o.total?.toFixed(2)}</span>
-                            </div>
-                            <div className="space-y-2 pt-3 border-t border-slate-50">
-                                {o.items?.map((item, i) => (
-                                    <div key={i} className="flex justify-between text-[11px] font-bold text-slate-500">
-                                        <span>{item.qty} x {item.label}</span>
-                                        <span className="text-slate-900">₹{(item.qty * item.rate).toFixed(2)}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                   </div>
-                 )}
-               </>
-             )}
-          </div>
-        )}
-      </main>
-
-      {/* BILL PREVIEW MODAL */}
-      {showPreview && (
-        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4 print:hidden animate-in fade-in duration-300">
-            <div className="bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden flex flex-col max-h-[90vh]">
-                <div className="p-6 bg-slate-50 border-b flex justify-between items-center">
-                    <h2 className="font-black uppercase tracking-tight text-xl">{T.preview}</h2>
-                    <button onClick={() => setShowPreview(false)} className="p-2 bg-slate-200 rounded-full hover:bg-red-100 transition-colors"><X size={20}/></button>
-                </div>
-                <div className="flex-1 overflow-y-auto p-6 bg-white">
-                    <div className="border-2 border-slate-100 rounded-2xl p-6 space-y-4">
-                        <div className="text-center border-b pb-4">
-                            <h3 className="font-black text-xl">{T.title}</h3>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{T.subtitle}</p>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                            <span className="font-bold text-slate-400">CUSTOMER:</span>
-                            <span className="font-black uppercase">{customerName}</span>
-                        </div>
-                        <div className="space-y-2">
-                            {cart.map((item, i) => (
-                                <div key={i} className="flex justify-between text-sm border-b border-slate-50 pb-2">
-                                    <span>{item.qty} x {item.label}</span>
-                                    <span className="font-black">₹{(item.qty * item.rate).toFixed(2)}</span>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="pt-4 flex justify-between items-center">
-                            <span className="font-black uppercase text-slate-400 text-xs">Total</span>
-                            <span className="text-3xl font-black">₹{totalAmount.toFixed(2)}</span>
-                        </div>
-                    </div>
-                </div>
-                <div className="p-6 bg-slate-50 border-t grid grid-cols-1 gap-3">
-                    <button 
-                        onClick={() => { setShowPreview(false); handlePrint(); }} 
-                        className="w-full bg-yellow-400 text-slate-900 py-5 rounded-2xl font-black text-xl flex items-center justify-center gap-3 shadow-lg hover:bg-yellow-500 active:scale-95 transition-all"
-                    >
-                        <Download size={24}/> {T.savePdf}
-                    </button>
-                </div>
-            </div>
-        </div>
-      )}
-
-      {/* FIXED NAV */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 h-20 flex items-center justify-around px-4 pb-2 print:hidden z-50">
-         <button onClick={() => { setView('shop'); setShowPreview(false); }} className={`flex flex-col items-center p-3 rounded-2xl transition-all ${view === 'shop' ? 'text-yellow-600 bg-yellow-50' : 'text-slate-400'}`}>
-            <Package size={22}/> <span className="text-[10px] font-black mt-1 uppercase tracking-tighter">{T.shop}</span>
-         </button>
-         
-         <button onClick={() => { setView('admin'); setShowPreview(false); }} className={`flex flex-col items-center p-3 rounded-2xl transition-all ${view === 'admin' ? 'text-yellow-600 bg-yellow-50' : 'text-slate-400'}`}>
-            <ClipboardList size={22}/> <span className="text-[10px] font-black mt-1 uppercase tracking-tighter">{T.owner}</span>
-         </button>
-      </nav>
-
-      <style>{`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sri Vinayaga Laber Works</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React and Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
         @media print {
-            /* Full page override for print */
-            @page { margin: 1cm; size: auto; }
-            body * { visibility: hidden !important; }
-            #print-area, #print-area * { visibility: visible !important; }
-            #print-area { 
-                position: absolute !important; 
-                left: 0 !important; 
-                top: 0 !important; 
-                width: 100% !important; 
-                display: block !important; 
-                padding: 0 !important;
-                margin: 0 !important;
-            }
-            .no-print { display: none !important; }
+            @page { margin: 1.5cm; size: a4; }
+            body * { visibility: hidden !important; height: 0 !important; overflow: hidden !important; }
+            #print-area, #print-area * { visibility: visible !important; height: auto !important; overflow: visible !important; }
+            #print-area { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; display: block !important; }
         }
-        select { -webkit-tap-highlight-color: transparent; }
-        * { -webkit-font-smoothing: antialiased; }
-      `}</style>
-    </div>
-  );
-}
+        select { -webkit-tap-highlight-color: transparent; outline: none; }
+        input { outline: none; }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+        window.fb = { initializeApp, getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, getAuth, signInAnonymously, onAuthStateChanged };
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Custom SVG Icons to avoid Lucide external library conflicts
+        const Icon = ({ name, size = 24, className = "" }) => {
+            const icons = {
+                Package: <path d="M16.5 9.4 7.55 4.24a2 2 0 0 0-2 0L3.42 5.51a1.49 1.49 0 0 0 .23 2.65L12 13l8.35-4.84a1.49 1.49 0 0 0 .23-2.65L18.45 4.24a2 2 0 0 0-2 0L16.5 9.4Z"/><path d="m3.29 14.29 7.4 4.29a2 2 0 0 0 2 0l7.4-4.29a1.5 1.5 0 0 0 0-2.6l-7.4-4.29a2 2 0 0 0-2 0l-7.4 4.29a1.5 1.5 0 0 0 0 2.6Z"/><path d="M12 22v-9"/>,
+                ChevronDown: <path d="m6 9 6 6 6-6"/>,
+                ClipboardList: <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>,
+                X: <path d="M18 6 6 18"/><path d="M6 6 18 18"/>,
+                Plus: <path d="M12 5v14"/><path d="M5 12h14"/>,
+                History: <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>,
+                Lock: <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>,
+                Send: <path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>
+            };
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {icons[name]}
+                </svg>
+            );
+        };
+
+        const PRODUCT_DATA = {
+            pipes: [
+                { size: 20, pieces: 40, rates: { "10 Kgs": 1.15, "15 Kgs": 1.20 } },
+                { size: 25, pieces: 38, rates: { "10 Kgs": 1.44, "15 Kgs": 1.70 } },
+                { size: 32, pieces: 30, rates: { "10 Kgs": 2.30, "15 Kgs": 2.50 } },
+                { size: 40, pieces: 26, rates: { "6 Kgs": 2.50, "10 Kgs": 3.50, "15 Kgs": 3.50 } },
+                { size: 50, pieces: 20, rates: { "6 Kgs": 4.00, "10 Kgs": 4.50, "15 Kgs": 4.50, "5 Bend": 6.10 } },
+                { size: 63, pieces: 17, rates: { "4 Kgs": 5.00, "6 Kgs": 6.00, "5 Bend": 6.90 } },
+                { size: 75, pieces: 15, rates: { "4 Kgs": 6.00, "6 Kgs": 7.00, "5 Bend": 8.70 } },
+                { size: 90, pieces: 13, rates: { "4 Kgs": 8.00, "6 Kgs": 9.00, "5 Bend": 10.62 } },
+                { size: 110, pieces: 11, rates: { "4 Kgs": 11.00, "6 Kgs": 12.65, "5 Bend": 12.65 } },
+                { size: 140, pieces: 8, rates: { "4 Kgs": 65.00, "6 Kgs": 80.00, "5 Bend": 115.00 } },
+                { size: 160, pieces: 6, rates: { "4 Kgs": 100.00, "6 Kgs": 115.00, "5 Bend": 172.50 } },
+                { size: 180, pieces: 5, rates: { "4 Kgs": 170.00, "6 Kgs": 195.50 } },
+                { size: 200, pieces: 5, rates: { "4 Kgs": 220.00, "6 Kgs": 245.50 } },
+            ],
+            jetFootvale: [
+                { name: "50*6", rate: 25.00 },
+                { name: "50*15", rate: 30.00 },
+                { name: "50*32", rate: 30.00 },
+                { name: "50*40", rate: 40.00 },
+                { name: "63*6", rate: 40.00 },
+            ],
+            longCoupler: [
+                { size: 32, rates: { "10 KG": 4.00, "15 KG": 5.00 } },
+                { size: 40, rates: { "6 KG": 4.00, "10 KG": 5.00 } },
+                { size: 50, rates: { "6 KG": 5.00 } },
+                { size: 63, rates: { "4 KG": 6.50, "6 KG": 7.00 } },
+                { size: 75, rates: { "4 KG": 7.50, "6 KG": 8.00 } },
+                { size: 90, rates: { "4 KG": 8.50, "6 KG": 9.00 } },
+                { size: 110, rates: { "4 KG": 9.50, "6 KG": 10.00 } },
+                { size: 140, rates: { "4 KG": 15.50, "6 KG": 18.00 } },
+                { size: 160, rates: { "4 KG": 18.50, "6 KG": 20.00 } },
+            ]
+        };
+
+        const UI_TEXT = {
+            en: {
+                title: "SRI VINAYAGA LABER WORKS",
+                subtitle: "Blessings of Sri Pachaiamman",
+                pvcPipes: "PVC Bend",
+                jetFootvale: "Jet Footvale",
+                pipeSize: "Size",
+                weight: "Type",
+                add: "Add to Bill",
+                grandTotal: "Grand Total",
+                customerName: "Customer Name",
+                generateBill: "Send Bill via WhatsApp",
+                shop: "Shop",
+                owner: "Records"
+            },
+            ta: {
+                title: "ஸ்ரீ விநாயகா லேபர் ஒர்க்ஸ்",
+                subtitle: "ஸ்ரீ பச்சையம்மன் துணை",
+                pvcPipes: "PVC பெண்ட்",
+                jetFootvale: "ஜெட் புட்வால்வ்",
+                pipeSize: "அளவு",
+                weight: "வகை",
+                add: "பில்லில் சேர்க்க",
+                grandTotal: "மொத்த தொகை",
+                customerName: "வாடிக்கையாளர் பெயர்",
+                generateBill: "பில் அனுப்பவும்",
+                shop: "கடை",
+                owner: "பதிவுகள்"
+            }
+        };
+
+        function App() {
+            const [lang, setLang] = useState('en');
+            const [user, setUser] = useState(null);
+            const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+            const [loginPassword, setLoginPassword] = useState('');
+            const [cart, setCart] = useState([]);
+            const [view, setView] = useState('shop');
+            const [orders, setOrders] = useState([]);
+            const [customerName, setCustomerName] = useState('');
+            const [isProcessing, setIsProcessing] = useState(false);
+
+            const T = UI_TEXT[lang];
+
+            const [selectedPipeSize, setSelectedPipeSize] = useState(PRODUCT_DATA.pipes[0].size);
+            const [selectedPipeWeight, setSelectedPipeWeight] = useState(Object.keys(PRODUCT_DATA.pipes[0].rates)[0]);
+
+            useEffect(() => {
+                if (!window.fb) return;
+                const { getAuth, signInAnonymously, onAuthStateChanged } = window.fb;
+                const auth = getAuth();
+                signInAnonymously(auth).catch(console.error);
+                return onAuthStateChanged(auth, setUser);
+            }, []);
+
+            useEffect(() => {
+                if (!window.fb || !user || !isAdminLoggedIn || view !== 'admin') return;
+                const { getFirestore, collection, query, orderBy, onSnapshot } = window.fb;
+                const db = getFirestore();
+                const q = query(collection(db, 'artifacts', 'sri-vinayaga-laber-works-v1', 'public', 'data', 'orders'), orderBy('createdAt', 'desc'));
+                return onSnapshot(q, (snapshot) => {
+                    setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                });
+            }, [user, isAdminLoggedIn, view]);
+
+            const currentPipe = PRODUCT_DATA.pipes.find(p => p.size === selectedPipeSize);
+
+            const addToCart = (product) => {
+                setCart(prev => {
+                    const exists = prev.find(item => item.id === product.id);
+                    if (exists) return prev.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item);
+                    return [...prev, { ...product, qty: 1 }];
+                });
+            };
+
+            const handleCheckout = async () => {
+                if (!customerName) { alert("Enter Name"); return; }
+                setIsProcessing(true);
+                const total = cart.reduce((sum, item) => sum + (item.rate * item.qty), 0);
+                try {
+                    const { getFirestore, collection, addDoc, serverTimestamp } = window.fb;
+                    const db = getFirestore();
+                    await addDoc(collection(db, 'artifacts', 'sri-vinayaga-laber-works-v1', 'public', 'data', 'orders'), { 
+                        customerName, items: cart, total, createdAt: serverTimestamp(), userId: user.uid 
+                    });
+                    const msg = `*SRI VINAYAGA LABER WORKS*\n*CUSTOMER:* ${customerName}\n*TOTAL:* ₹${total}`;
+                    window.open(`https://wa.me/918643861100?text=${encodeURIComponent(msg)}`);
+                    setCart([]); setCustomerName(''); alert("Bill Sent!");
+                } catch (e) { alert(e.message); } finally { setIsProcessing(false); }
+            };
+
+            return (
+                <div className="min-h-screen pb-24">
+                    <header className="bg-yellow-400 p-4 sticky top-0 z-50 shadow-sm text-center">
+                        <h2 className="text-[10px] font-black uppercase tracking-widest opacity-70">{T.subtitle}</h2>
+                        <h1 className="text-lg font-black">{T.title}</h1>
+                    </header>
+
+                    <main className="max-w-xl mx-auto p-4 space-y-6">
+                        {view === 'shop' ? (
+                            <>
+                                <div className="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Icon name="Package" className="text-yellow-600" />
+                                        <h3 className="font-black uppercase text-sm">{T.pvcPipes}</h3>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <div className="relative">
+                                            <label className="text-[10px] font-bold text-slate-400 absolute left-3 top-2 uppercase">{T.pipeSize}</label>
+                                            <select 
+                                                className="w-full bg-slate-50 rounded-2xl pt-7 pb-3 px-3 font-bold appearance-none" 
+                                                value={selectedPipeSize} 
+                                                onChange={e => setSelectedPipeSize(parseInt(e.target.value))}
+                                            >
+                                                {PRODUCT_DATA.pipes.map(p => <option key={p.size} value={p.size}>{p.size}mm</option>)}
+                                            </select>
+                                            <Icon name="ChevronDown" size={16} className="absolute right-3 top-1/2 mt-1 text-slate-400" />
+                                        </div>
+                                        <button 
+                                            onClick={() => addToCart({
+                                                id: `p-${selectedPipeSize}`, 
+                                                label: `${selectedPipeSize}mm Bend`, 
+                                                rate: currentPipe.rates[Object.keys(currentPipe.rates)[0]]
+                                            })} 
+                                            className="bg-yellow-400 p-4 rounded-2xl font-black text-lg active:scale-95 transition-transform"
+                                        >
+                                            {T.add}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {cart.length > 0 && (
+                                    <div className="bg-slate-900 text-white p-6 rounded-[2.5rem] shadow-xl space-y-4">
+                                        <div className="flex justify-between items-center border-b border-white/10 pb-4">
+                                            <h3 className="font-black uppercase tracking-widest text-xs opacity-50">Current Items</h3>
+                                            <button onClick={() => setCart([])}><Icon name="X" size={18} /></button>
+                                        </div>
+                                        <div className="space-y-3">
+                                            {cart.map(item => (
+                                                <div key={item.id} className="flex justify-between items-center">
+                                                    <span className="font-bold">{item.qty} x {item.label}</span>
+                                                    <span className="font-black">₹{item.rate * item.qty}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="pt-4 border-t border-white/10 flex justify-between items-end">
+                                            <span className="text-[10px] font-bold opacity-50 uppercase">{T.grandTotal}</span>
+                                            <span className="text-3xl font-black">₹{cart.reduce((s,i)=>s+(i.rate*i.qty),0)}</span>
+                                        </div>
+                                        <div className="space-y-3 pt-4">
+                                            <input 
+                                                className="w-full p-4 rounded-2xl bg-white/10 border border-white/20 text-white placeholder:text-white/30 font-bold outline-none" 
+                                                placeholder={T.customerName} 
+                                                value={customerName} 
+                                                onChange={e=>setCustomerName(e.target.value)} 
+                                            />
+                                            <button 
+                                                onClick={handleCheckout} 
+                                                className="w-full bg-green-500 p-5 rounded-2xl font-black text-lg flex items-center justify-center gap-2"
+                                            >
+                                                <Icon name="Send" size={20} /> {T.generateBill}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="space-y-4">
+                                {!isAdminLoggedIn ? (
+                                    <div className="bg-white p-10 rounded-3xl border shadow-sm text-center space-y-6">
+                                        <Icon name="Lock" size={48} className="mx-auto text-slate-300" />
+                                        <input 
+                                            type="password" 
+                                            className="w-full p-4 rounded-xl bg-slate-50 border font-bold text-center" 
+                                            placeholder="Owner Password" 
+                                            value={loginPassword} 
+                                            onChange={e => setLoginPassword(e.target.value)} 
+                                        />
+                                        <button 
+                                            onClick={() => loginPassword === "Owner@123" ? setIsAdminLoggedIn(true) : alert("Wrong")} 
+                                            className="w-full bg-slate-900 text-white p-4 rounded-xl font-black"
+                                        >
+                                            Login
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-center">
+                                            <h3 className="font-black flex items-center gap-2"><Icon name="History" /> Sales</h3>
+                                            <button onClick={() => setIsAdminLoggedIn(false)} className="text-red-500 font-bold text-xs uppercase">Logout</button>
+                                        </div>
+                                        {orders.map(o => (
+                                            <div key={o.id} className="bg-white p-5 rounded-2xl border shadow-sm">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <span className="font-black uppercase text-sm">{o.customerName}</span>
+                                                    <span className="font-black text-green-600">₹{o.total}</span>
+                                                </div>
+                                                <div className="text-[10px] text-slate-400 font-bold">{o.createdAt?.toDate().toLocaleString()}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </main>
+
+                    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t h-20 flex justify-around items-center px-6 shadow-2xl z-50">
+                        <button onClick={() => setView('shop')} className={`flex flex-col items-center gap-1 ${view === 'shop' ? 'text-yellow-600' : 'text-slate-300'}`}>
+                            <Icon name="Package" size={24} />
+                            <span className="text-[10px] font-black uppercase">{T.shop}</span>
+                        </button>
+                        <button onClick={() => setView('admin')} className={`flex flex-col items-center gap-1 ${view === 'admin' ? 'text-yellow-600' : 'text-slate-300'}`}>
+                            <Icon name="ClipboardList" size={24} />
+                            <span className="text-[10px] font-black uppercase">{T.owner}</span>
+                        </button>
+                    </nav>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
