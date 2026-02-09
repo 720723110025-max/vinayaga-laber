@@ -11,8 +11,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
-        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         select { 
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); 
@@ -20,15 +20,31 @@
             background-position: right 0.75rem center; 
             background-size: 1rem; 
             -webkit-appearance: none;
-            appearance: none;
         }
+        .tap-scale:active { transform: scale(0.97); }
+        @keyframes slide-up { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-slide-up { animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900">
+<body class="text-slate-900">
     <div id="root"></div>
 
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'sri-vinayaga-laber';
+
+        window.Firebase = { db, auth, appId, collection, addDoc, onSnapshot, query, deleteDoc, doc, Timestamp, signInAnonymously, signInWithCustomToken, onAuthStateChanged };
+    </script>
+
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useMemo } = React;
 
         const PRODUCT_DATA = {
             pipes: [
@@ -73,10 +89,14 @@
                 address: "SINTHAN NAGAR, KRISHNAMPALAYAM, ERODE - 03",
                 contacts: "CELL: 9095786363, 8015767107",
                 bend: "BEND", coupler: "COUPLER", jet: "JET FOOTVALE",
-                add: "Add to Bill", total: "Total Amount", whatsapp: "Send to WhatsApp",
+                add: "Add to Cart", total: "Total", whatsapp: "WhatsApp Bill",
                 pdf: "Download PDF", name: "Customer Name",
-                viewBill: "Generate Bill", empty: "Cart Empty",
-                size: "Size (mm)", type: "Type"
+                viewBill: "Review Bill", empty: "No items in cart",
+                size: "Size (mm)", type: "Type",
+                success: "Bill Generated & Saved!",
+                history: "Order History",
+                passcode: "Enter Owner Passcode",
+                newBill: "New Bill"
             },
             ta: {
                 title: "ஸ்ரீ விநாயகா லேபர் ஒர்க்ஸ்",
@@ -84,36 +104,49 @@
                 address: "சிந்தன் நகர், கிருஷ்ணம்பாளையம், ஈரோடு - 03",
                 contacts: "செல்: 9095786363, 8015767107",
                 bend: "பெண்ட் (BEND)", coupler: "கப்ளர் (COUPLER)", jet: "ஜெட் (JET)",
-                add: "சேர்க்க", total: "மொத்த தொகை", whatsapp: "வாட்ஸ்அப் அனுப்ப",
-                pdf: "பில் பதிவிறக்கம்", name: "வாடிக்கையாளர் பெயர்",
-                viewBill: "பில் உருவாக்கு", empty: "பட்டியல் காலியாக உள்ளது",
-                size: "அளவு", type: "வகை"
+                add: "சேர்க்க", total: "மொத்தம்", whatsapp: "வாட்ஸ்அப் பில்",
+                pdf: "பதிவிறக்கம் (PDF)", name: "வாடிக்கையாளர் பெயர்",
+                viewBill: "பில் பார்க்க", empty: "பட்டியல் காலியாக உள்ளது",
+                size: "அளவு", type: "வகை",
+                success: "பில் சேமிக்கப்பட்டது!",
+                history: "பழைய ஆர்டர்கள்",
+                passcode: "கடவுச்சொல்லை உள்ளிடவும்",
+                newBill: "புதிய பில்"
             }
         };
 
-        const Icon = ({ name, className }) => {
+        const Icon = ({ name, className = "w-5 h-5" }) => {
             const icons = {
                 whatsapp: <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-11.7 8.38 8.38 0 0 1 3.8.9L21 3zM17 15.5c-.2-.4-.8-.6-1.6-.9-.8-.4-1.1-.6-1.3-.8-.2-.2-.3-.5-.1-.8s.6-.8.8-1c.2-.2.3-.5.1-.8-.2-.3-.8-1.9-1.1-2.5-.3-.6-.6-.5-.8-.5H13c-.2 0-.6.1-.9.5-.3.4-1.1 1.1-1.1 2.6s1.1 3 1.2 3.2c.1.2 2.2 3.4 5.4 4.7.7.3 1.3.5 1.8.7.8.2 1.5.2 2 .1.6-.1 1.7-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.1-.3-.2-.5-.3z" />,
                 plus: <path d="M12 5v14M5 12h14" />,
                 close: <path d="M18 6 6 18M6 6l12 12" />,
                 file: <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />,
                 trash: <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />,
-                check: <path d="M20 6 9 17l-5-5" />
+                check: <path d="M20 6 9 17l-5-5" />,
+                user: <React.Fragment><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></React.Fragment>,
+                chevronRight: <path d="m9 18 6-6-6-6" />,
+                key: <path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.778-7.778zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3-3.5 3.5z" />,
+                download: <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m4-5 5 5 5-5m-5 5V3"/>
             };
             return (
-                <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     {icons[name]}
                 </svg>
             );
         };
 
         function App() {
+            const [user, setUser] = useState(null);
             const [lang, setLang] = useState('ta');
             const [cart, setCart] = useState([]);
             const [customerName, setCustomerName] = useState('');
             const [showModal, setShowModal] = useState(false);
             const [isBillGenerated, setIsBillGenerated] = useState(false);
-            const [billNo, setBillNo] = useState(1001);
+            const [billNo, setBillNo] = useState(() => Math.floor(1000 + Math.random() * 9000));
+            const [showDashboard, setShowDashboard] = useState(false);
+            const [showPasscodeScreen, setShowPasscodeScreen] = useState(false);
+            const [passcodeInput, setPasscodeInput] = useState('');
+            const [orders, setOrders] = useState([]);
             
             const [pS, setPS] = useState(20); 
             const [pW, setPW] = useState("15 Kgs");
@@ -122,25 +155,34 @@
             const [jN, setJN] = useState(PRODUCT_DATA.jetFootvale[0].name);
 
             const T = TRANSLATIONS[lang];
+            const OWNER_PASSCODE = "1234";
+            const TARGET_WHATSAPP = "8643861100";
 
             useEffect(() => {
-                const pipe = PRODUCT_DATA.pipes.find(p => p.size === pS);
-                if (pipe) {
-                    const availableRates = Object.keys(pipe.rates);
-                    if (!pipe.rates[pW]) setPW(availableRates[0]);
-                }
-            }, [pS]);
+                const initAuth = async () => {
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await window.Firebase.signInWithCustomToken(window.Firebase.auth, __initial_auth_token);
+                        } else {
+                            await window.Firebase.signInAnonymously(window.Firebase.auth);
+                        }
+                    } catch (e) { console.error(e); }
+                };
+                initAuth();
+                return window.Firebase.onAuthStateChanged(window.Firebase.auth, setUser);
+            }, []);
 
             useEffect(() => {
-                const coupler = PRODUCT_DATA.coupler.find(p => p.size === cS);
-                if (coupler) {
-                    const availableRates = Object.keys(coupler.rates);
-                    if (!coupler.rates[cW]) setCW(availableRates[0]);
-                }
-            }, [cS]);
+                if (!user || !showDashboard) return;
+                const q = window.Firebase.collection(window.Firebase.db, 'artifacts', window.Firebase.appId, 'public', 'data', 'orders');
+                return window.Firebase.onSnapshot(q, (snapshot) => {
+                    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setOrders(data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+                }, (err) => console.error(err));
+            }, [user, showDashboard]);
 
             const addToCart = (id, labelEn, labelTa, rate) => {
-                if (rate === undefined || rate === null) return;
+                if (!rate) return;
                 setCart(prev => {
                     const exists = prev.find(i => i.id === id);
                     if (exists) return prev.map(i => i.id === id ? {...i, qty: i.qty + 1} : i);
@@ -148,214 +190,244 @@
                 });
             };
 
-            const removeFromCart = (id) => setCart(prev => prev.filter(i => i.id !== id));
+            const grandTotal = useMemo(() => cart.reduce((a, b) => a + (b.rate * b.qty), 0), [cart]);
 
-            const grandTotal = cart.reduce((a, b) => a + (b.rate * b.qty), 0);
-
-            const handleGenerateBillAction = () => {
-                if (!customerName.trim()) {
-                    alert(lang === 'ta' ? "வாடிக்கையாளர் பெயரை உள்ளிடவும்" : "Please enter customer name");
-                    return;
-                }
-                setIsBillGenerated(true);
+            const handleFinalizeBill = async () => {
+                if (!customerName.trim() || !user) return;
+                try {
+                    const orderData = {
+                        billNo,
+                        customerName: customerName.trim(),
+                        items: cart,
+                        total: grandTotal,
+                        createdAt: window.Firebase.Timestamp.now()
+                    };
+                    await window.Firebase.addDoc(window.Firebase.collection(window.Firebase.db, 'artifacts', window.Firebase.appId, 'public', 'data', 'orders'), orderData);
+                    setIsBillGenerated(true);
+                } catch (e) { console.error(e); }
             };
 
             const sendWhatsApp = () => {
-                if (!isBillGenerated) return;
-                const date = new Date().toLocaleDateString();
-                const msg = `*${T.title}*\n_${T.address}_\n--------------------------\n*Bill No:* #${billNo}\n*Date:* ${date}\n*Customer:* ${customerName.trim()}\n--------------------------\n${cart.map(i => `• ${lang==='en'?i.labelEn:i.labelTa}\n  ${i.qty} x ₹${i.rate.toFixed(2)} = *₹${(i.rate*i.qty).toFixed(2)}*`).join('\n\n')}\n--------------------------\n*TOTAL: ₹${grandTotal.toFixed(2)}*\n--------------------------`;
-                
-                const whatsappUrl = `https://wa.me/918643861100?text=${encodeURIComponent(msg)}`;
+                const date = new Date().toLocaleDateString('en-IN');
+                const msg = `*${T.title}*\n_${T.address}_\n--------------------------\n*Bill No:* #${billNo}\n*Date:* ${date}\n*Customer:* ${customerName.trim()}\n--------------------------\n${cart.map(i => `• ${lang==='en'?i.labelEn:i.labelTa}\n  ${i.qty} x ₹${i.rate.toFixed(2)} = *₹${(i.rate*i.qty).toFixed(2)}*`).join('\n\n')}\n--------------------------\n*TOTAL: ₹${grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n--------------------------\n_Thank you!_`;
+                const whatsappUrl = `https://wa.me/91${TARGET_WHATSAPP}?text=${encodeURIComponent(msg)}`;
                 window.open(whatsappUrl, '_blank');
-                
-                setBillNo(prev => prev + 1);
-                setCart([]); setCustomerName(''); setShowModal(false); setIsBillGenerated(false);
             };
 
             const downloadPDF = () => {
-                if (!isBillGenerated) return;
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
+                const date = new Date().toLocaleDateString('en-IN');
                 
-                doc.setFontSize(10);
-                doc.text(T.subtitle, 105, 12, { align: 'center' });
-                doc.setFontSize(22);
-                doc.setFont("helvetica", "bold");
-                doc.text(T.title, 105, 22, { align: 'center' });
-                doc.setFontSize(9);
-                doc.setFont("helvetica", "normal");
-                doc.text(T.address, 105, 28, { align: 'center' });
-                doc.text(T.contacts, 105, 33, { align: 'center' });
-                doc.setLineWidth(0.5);
-                doc.line(20, 36, 190, 36);
-
-                doc.setFontSize(11);
-                doc.text(`Bill No: #${billNo}`, 20, 45);
-                doc.text(`Date: ${new Date().toLocaleDateString()}`, 190, 45, { align: 'right' });
-                doc.setFontSize(13);
-                doc.setFont("helvetica", "bold");
-                doc.text(`Customer: ${customerName.trim()}`, 20, 55);
+                // Header
+                doc.setFontSize(20); doc.setFont("helvetica", "bold");
+                doc.text(T.title, 105, 20, { align: "center" });
+                doc.setFontSize(10); doc.setFont("helvetica", "normal");
+                doc.text(T.subtitle, 105, 26, { align: "center" });
+                doc.text(T.address, 105, 31, { align: "center" });
+                doc.text(T.contacts, 105, 36, { align: "center" });
+                
+                // Horizontal Line
+                doc.line(10, 42, 200, 42);
+                
+                // Bill Info
+                doc.setFontSize(12); doc.setFont("helvetica", "bold");
+                doc.text(`Bill No: #${billNo}`, 10, 52);
+                doc.text(`Date: ${date}`, 200, 52, { align: "right" });
+                doc.text(`Customer: ${customerName.trim()}`, 10, 60);
+                
+                // Table
+                const tableData = cart.map(i => [
+                    lang === 'en' ? i.labelEn : i.labelTa,
+                    i.qty.toString(),
+                    `₹${i.rate.toFixed(2)}`,
+                    `₹${(i.rate * i.qty).toFixed(2)}`
+                ]);
                 
                 doc.autoTable({
-                    startY: 62,
+                    startY: 70,
                     head: [['Description', 'Qty', 'Rate', 'Total']],
-                    body: cart.map(i => [lang==='en'?i.labelEn:i.labelTa, i.qty, i.rate.toFixed(2), (i.rate*i.qty).toFixed(2)]),
-                    foot: [['', '', 'GRAND TOTAL', `Rs. ${grandTotal.toFixed(2)}`]],
-                    theme: 'grid',
-                    headStyles: { fillColor: [250, 204, 21], textColor: [0, 0, 0], fontStyle: 'bold' }
+                    body: tableData,
+                    theme: 'striped',
+                    headStyles: { fillStyle: 'black', fillColor: [0, 0, 0] }
                 });
                 
-                doc.save(`Bill_${billNo}.pdf`);
+                // Total
+                const finalY = doc.lastAutoTable.finalY + 10;
+                doc.setFontSize(14); doc.setFont("helvetica", "bold");
+                doc.text(`GRAND TOTAL: ₹${grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 200, finalY, { align: "right" });
+                
+                doc.setFontSize(10); doc.setFont("helvetica", "italic");
+                doc.text("Thank you for your business!", 105, finalY + 20, { align: "center" });
+                
+                doc.save(`Invoice_${billNo}_${customerName.trim()}.pdf`);
             };
 
-            const foundPipe = PRODUCT_DATA.pipes.find(p => p.size === pS);
-            const currentPipeRate = foundPipe ? foundPipe.rates[pW] : 0;
-            
-            const foundCoupler = PRODUCT_DATA.coupler.find(p => p.size === cS);
-            const currentCouplerRate = foundCoupler ? foundCoupler.rates[cW] : 0;
-            
-            const foundJet = PRODUCT_DATA.jetFootvale.find(j => j.name === jN);
-            const currentJetRate = foundJet ? foundJet.rate : 0;
+            const resetApp = () => {
+                setBillNo(Math.floor(1000 + Math.random() * 9000));
+                setCart([]); setCustomerName(''); setShowModal(false); setIsBillGenerated(false);
+            };
 
             return (
-                <div className="min-h-screen bg-slate-50 pb-32">
-                    {/* Top Info Area */}
-                    <header className="bg-yellow-400 p-6 text-center shadow-md sticky top-0 z-30">
-                        <button onClick={() => setLang(l => l === 'en' ? 'ta' : 'en')} className="absolute right-4 top-4 bg-white/40 p-2 px-3 rounded-full text-[10px] font-black uppercase">
-                            {lang === 'en' ? 'Tamil' : 'English'}
+                <div className="min-h-screen bg-slate-50 pb-36 relative overflow-x-hidden">
+                    <header className="bg-yellow-400 p-6 pt-8 text-center shadow-lg sticky top-0 z-30 rounded-b-[2.5rem]">
+                        <button onClick={() => setLang(l => l === 'en' ? 'ta' : 'en')} className="absolute right-6 top-8 bg-black text-white p-2 px-4 rounded-full text-[10px] font-black uppercase tracking-widest tap-scale">
+                            {lang === 'en' ? 'தமிழ்' : 'English'}
                         </button>
-                        <p className="text-[10px] font-black opacity-70 mb-1 tracking-widest">{T.subtitle}</p>
-                        <h1 className="text-xl font-black mb-1 leading-tight">{T.title}</h1>
-                        <p className="text-[9px] font-bold leading-tight opacity-80 max-w-[250px] mx-auto uppercase">{T.address}</p>
-                        <p className="text-[10px] font-black mt-2 bg-black/10 inline-block px-4 py-1 rounded-full">{T.contacts}</p>
+                        <div className="animate-pulse opacity-80 text-[10px] font-black uppercase tracking-widest mb-1 text-slate-800">{T.subtitle}</div>
+                        <h1 className="text-2xl font-black mb-1 leading-tight tracking-tight text-slate-900">{T.title}</h1>
+                        <p className="text-[9px] font-bold leading-tight opacity-70 max-w-[200px] mx-auto uppercase mb-4">{T.address}</p>
+                        <div className="bg-black/5 rounded-2xl p-2 inline-flex items-center gap-2">
+                             <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                             <span className="text-[10px] font-black tracking-wider uppercase text-slate-700">{T.contacts}</span>
+                        </div>
                     </header>
 
-                    <div className="p-5 space-y-5 max-w-md mx-auto">
-                        {/* Section: Bend */}
-                        <div className="bg-white p-5 rounded-[2rem] border-2 border-slate-100 shadow-sm">
-                            <h2 className="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-widest">{T.bend}</h2>
-                            <div className="grid grid-cols-2 gap-3 mb-4">
-                                <select className="bg-slate-50 p-4 rounded-2xl font-black border-2 border-slate-100 text-sm" value={pS} onChange={e => setPS(Number(e.target.value))}>
-                                    {PRODUCT_DATA.pipes.map(p => <option key={p.size} value={p.size}>{p.size}mm</option>)}
-                                </select>
-                                <select className="bg-slate-50 p-4 rounded-2xl font-black border-2 border-slate-100 text-sm" value={pW} onChange={e => setPW(e.target.value)}>
-                                    {foundPipe && Object.keys(foundPipe.rates).map(r => <option key={r} value={r}>{r}</option>)}
-                                </select>
+                    {showPasscodeScreen && (
+                        <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[100] flex items-center justify-center p-6">
+                            <div className="bg-white p-8 rounded-[3rem] w-full max-w-xs text-center space-y-6">
+                                <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                                    <Icon name="key" className="w-8 h-8" />
+                                </div>
+                                <h3 className="font-black text-lg uppercase tracking-wider">{T.passcode}</h3>
+                                <form onSubmit={(e) => { e.preventDefault(); if(passcodeInput === OWNER_PASSCODE) { setShowPasscodeScreen(false); setShowDashboard(true); setPasscodeInput(''); } else setPasscodeInput(''); }} className="space-y-4">
+                                    <input type="password" className="w-full bg-slate-100 p-5 rounded-3xl text-center text-2xl tracking-[0.5em] font-black outline-none" maxLength={4} autoFocus value={passcodeInput} onChange={e => setPasscodeInput(e.target.value)} placeholder="••••" />
+                                    <div className="flex gap-2">
+                                        <button type="button" onClick={() => setShowPasscodeScreen(false)} className="flex-1 bg-slate-100 p-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest">Cancel</button>
+                                        <button type="submit" className="flex-1 bg-yellow-400 p-4 rounded-2xl font-black uppercase text-[10px] tracking-widest">Open</button>
+                                    </div>
+                                </form>
                             </div>
-                            <button onClick={() => addToCart(`b-${pS}-${pW}`, `${pS}mm Bend ${pW}`, `${pS}மிமீ பெண்ட் ${pW}`, currentPipeRate)} 
-                                className="w-full bg-yellow-400 hover:bg-yellow-500 p-4 rounded-2xl font-black text-sm flex items-center justify-center gap-3 active:scale-95 transition-transform">
-                                <span className="bg-black/10 px-3 py-1 rounded-lg flex items-center gap-1">
-                                    <Icon name="plus" className="w-4 h-4" />
-                                    ₹{(currentPipeRate || 0).toFixed(2)}
-                                </span>
-                                {T.add}
-                            </button>
                         </div>
+                    )}
 
-                        {/* Section: Coupler */}
-                        <div className="bg-white p-5 rounded-[2rem] border-2 border-slate-100 shadow-sm">
-                            <h2 className="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-widest">{T.coupler}</h2>
-                            <div className="grid grid-cols-2 gap-3 mb-4">
-                                <select className="bg-slate-50 p-4 rounded-2xl font-black border-2 border-slate-100 text-sm" value={cS} onChange={e => setCS(Number(e.target.value))}>
-                                    {PRODUCT_DATA.coupler.map(p => <option key={p.size} value={p.size}>{p.size}mm</option>)}
-                                </select>
-                                <select className="bg-slate-50 p-4 rounded-2xl font-black border-2 border-slate-100 text-sm" value={cW} onChange={e => setCW(e.target.value)}>
-                                    {foundCoupler && Object.keys(foundCoupler.rates).map(r => <option key={r} value={r}>{r}</option>)}
-                                </select>
+                    {showDashboard && (
+                        <div className="fixed inset-0 bg-slate-50 z-[90] flex flex-col pt-4">
+                            <header className="px-6 flex justify-between items-center mb-4">
+                                <div>
+                                    <h2 className="text-2xl font-black leading-tight uppercase tracking-tight">{T.history}</h2>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Manage recorded bills</p>
+                                </div>
+                                <button onClick={() => setShowDashboard(false)} className="bg-white p-4 rounded-full shadow-sm tap-scale"><Icon name="close" /></button>
+                            </header>
+                            <div className="flex-1 overflow-y-auto px-6 space-y-4 pb-10">
+                                {orders.map(order => (
+                                    <div key={order.id} className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">#{order.billNo}</p>
+                                                <h4 className="font-black text-lg uppercase">{order.customerName}</h4>
+                                            </div>
+                                            <button onClick={() => window.Firebase.deleteDoc(window.Firebase.doc(window.Firebase.db, 'artifacts', window.Firebase.appId, 'public', 'data', 'orders', order.id))} className="text-red-400 p-2"><Icon name="trash" /></button>
+                                        </div>
+                                        <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
+                                            <span className="text-[10px] font-black uppercase text-slate-400">Total</span>
+                                            <span className="font-black text-xl">₹{order.total.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                            <button onClick={() => addToCart(`c-${cS}-${cW}`, `${cS}mm Coupler ${cW}`, `${cS}மிமீ கப்ளர் ${cW}`, currentCouplerRate)} 
-                                className="w-full bg-blue-600 text-white p-4 rounded-2xl font-black text-sm flex items-center justify-center gap-3 active:scale-95 transition-transform">
-                                <span className="bg-white/20 px-3 py-1 rounded-lg flex items-center gap-1">
-                                    <Icon name="plus" className="w-4 h-4" />
-                                    ₹{(currentCouplerRate || 0).toFixed(2)}
-                                </span>
-                                {T.add}
-                            </button>
                         </div>
+                    )}
 
-                        {/* Section: Jet */}
-                        <div className="bg-white p-5 rounded-[2rem] border-2 border-slate-100 shadow-sm">
-                            <h2 className="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-widest">{T.jet}</h2>
-                            <select className="w-full bg-slate-50 p-4 rounded-2xl font-black border-2 border-slate-100 mb-4 text-sm" value={jN} onChange={e => setJN(e.target.value)}>
+                    <main className="p-5 space-y-6 max-w-lg mx-auto">
+                        {[
+                            { title: T.bend, type: 'bend', color: 'bg-yellow-400', s: pS, setS: setPS, w: pW, setW: setPW, data: PRODUCT_DATA.pipes, rate: PRODUCT_DATA.pipes.find(p=>p.size===pS)?.rates[pW], label: 'Bend' },
+                            { title: T.coupler, type: 'coupler', color: 'bg-blue-600', s: cS, setS: setCS, w: cW, setW: setCW, data: PRODUCT_DATA.coupler, rate: PRODUCT_DATA.coupler.find(p=>p.size===cS)?.rates[cW], label: 'Coupler' }
+                        ].map((section) => (
+                            <div key={section.type} className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
+                                <h2 className="text-[11px] font-black text-slate-400 mb-5 uppercase tracking-[0.2em]">{section.title}</h2>
+                                <div className="grid grid-cols-2 gap-4 mb-5">
+                                    <select className="bg-slate-100 p-4 rounded-2xl font-bold text-sm outline-none" value={section.s} onChange={e => section.setS(Number(e.target.value))}>
+                                        {section.data.map(p => <option key={p.size} value={p.size}>{p.size}mm</option>)}
+                                    </select>
+                                    <select className="bg-slate-100 p-4 rounded-2xl font-bold text-sm outline-none" value={section.w} onChange={e => section.setW(e.target.value)}>
+                                        {Object.keys(section.data.find(d => d.size === section.s).rates).map(r => <option key={r} value={r}>{r}</option>)}
+                                    </select>
+                                </div>
+                                <button onClick={() => addToCart(`${section.type}-${section.s}-${section.w}`, `${section.s}mm ${section.label} ${section.w}`, `${section.s}மிமீ ${section.title} ${section.w}`, section.rate)} className={`w-full ${section.color} ${section.color.includes('blue') ? 'text-white' : 'text-slate-900'} p-5 rounded-3xl font-black text-sm flex items-center justify-center gap-3 tap-scale shadow-lg`}>
+                                    <span className="bg-black/10 px-4 py-1.5 rounded-xl flex items-center gap-2">₹{(section.rate || 0).toFixed(2)}</span>
+                                    {T.add}
+                                    <Icon name="plus" className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))}
+
+                        <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
+                            <h2 className="text-[11px] font-black text-slate-400 mb-5 uppercase tracking-[0.2em]">{T.jet}</h2>
+                            <select className="w-full bg-slate-100 p-4 rounded-2xl font-bold text-sm outline-none mb-5" value={jN} onChange={e => setJN(e.target.value)}>
                                 {PRODUCT_DATA.jetFootvale.map(j => <option key={j.name} value={j.name}>{j.name}</option>)}
                             </select>
-                            <button onClick={() => addToCart(`j-${jN}`, `Jet ${jN}`, `ஜெட் ${jN}`, currentJetRate)} 
-                                className="w-full bg-slate-900 text-white p-4 rounded-2xl font-black text-sm flex items-center justify-center gap-3 active:scale-95 transition-transform">
-                                <span className="bg-white/10 px-3 py-1 rounded-lg flex items-center gap-1">
-                                    <Icon name="plus" className="w-4 h-4" />
-                                    ₹{(currentJetRate || 0).toFixed(2)}
-                                </span>
+                            <button onClick={() => addToCart(`j-${jN}`, `Jet ${jN}`, `ஜெட் ${jN}`, PRODUCT_DATA.jetFootvale.find(j=>j.name===jN)?.rate)} className="w-full bg-slate-900 text-white p-5 rounded-3xl font-black text-sm flex items-center justify-center gap-3 tap-scale transition-all">
+                                <span className="bg-white/10 px-4 py-1.5 rounded-xl flex items-center gap-2">₹{(PRODUCT_DATA.jetFootvale.find(j=>j.name===jN)?.rate || 0).toFixed(2)}</span>
                                 {T.add}
+                                <Icon name="plus" className="w-4 h-4" />
                             </button>
                         </div>
+                    </main>
+
+                    <div className="fixed bottom-4 left-6 z-40 opacity-20 hover:opacity-100 transition-opacity">
+                        <button onClick={() => setShowPasscodeScreen(true)} className="p-3 bg-slate-200 rounded-full tap-scale"><Icon name="key" className="w-3 h-3 text-slate-500" /></button>
                     </div>
 
-                    {/* Footer Generation Button */}
-                    {cart.length > 0 && (
-                        <div className="fixed bottom-6 left-6 right-6 z-40">
-                            <button onClick={() => { setShowModal(true); setIsBillGenerated(false); }} className="w-full bg-slate-900 text-white p-5 rounded-full shadow-2xl flex justify-between items-center px-8 border-2 border-yellow-400">
+                    {cart.length > 0 && !showModal && !showDashboard && (
+                        <div className="fixed bottom-8 left-6 right-6 z-40">
+                            <button onClick={() => setShowModal(true)} className="w-full bg-slate-900 text-white p-5 rounded-full shadow-2xl flex justify-between items-center px-8 border-4 border-yellow-400 tap-scale">
                                 <div className="text-left">
-                                    <p className="text-[10px] font-black text-yellow-400 uppercase leading-none mb-1">{T.total}</p>
-                                    <p className="font-black text-xl">₹{grandTotal.toFixed(2)}</p>
+                                    <p className="text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-1">{T.total}</p>
+                                    <p className="font-black text-xl">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
                                 </div>
-                                <span className="uppercase text-[10px] font-black tracking-widest bg-yellow-400 text-slate-900 px-5 py-2 rounded-full">{T.viewBill}</span>
+                                <div className="flex items-center gap-3 bg-yellow-400 text-slate-900 px-6 py-3 rounded-full">
+                                    <span className="uppercase text-[11px] font-black tracking-widest">{T.viewBill}</span>
+                                    <Icon name="chevronRight" className="w-4 h-4" />
+                                </div>
                             </button>
                         </div>
                     )}
 
-                    {/* Final Processing Modal */}
                     {showModal && (
-                        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                            <div className="bg-white w-full max-w-sm rounded-[3rem] p-8 space-y-6 overflow-y-auto max-h-[90vh]">
-                                <div className="flex justify-between items-start">
-                                    <h3 className="font-black text-2xl">Bill Preview</h3>
-                                    <button onClick={() => setShowModal(false)} className="bg-slate-100 p-2 rounded-full"><Icon name="close" /></button>
+                        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 flex items-end justify-center">
+                            <div className="bg-white w-full max-w-md rounded-t-[3rem] p-8 pb-12 space-y-6 shadow-2xl animate-slide-up max-h-[95vh] overflow-y-auto">
+                                <div className="flex justify-between items-center border-b pb-4">
+                                    <h3 className="font-black text-2xl tracking-tight">Checkout</h3>
+                                    <button onClick={() => setShowModal(false)} className="bg-slate-100 p-3 rounded-full"><Icon name="close" /></button>
                                 </div>
 
-                                <div className="space-y-4">
-                                    <div className="max-h-[30vh] overflow-y-auto space-y-2 no-scrollbar pr-2">
-                                        {cart.map(i => (
-                                            <div key={i.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                                                <div className="text-[11px] font-bold">
-                                                    <p>{lang==='en'?i.labelEn:i.labelTa}</p>
-                                                    <p className="opacity-50">{i.qty} x ₹{i.rate.toFixed(2)}</p>
-                                                </div>
-                                                <button onClick={() => removeFromCart(i.id)} className="text-red-400"><Icon name="trash" /></button>
+                                <div className="space-y-3">
+                                    {cart.map(i => (
+                                        <div key={i.id} className="flex justify-between items-center p-4 bg-slate-50 rounded-3xl">
+                                            <div>
+                                                <p className="text-[12px] font-black">{lang === 'en' ? i.labelEn : i.labelTa}</p>
+                                                <p className="text-[10px] font-bold text-slate-400">{i.qty} x ₹{i.rate.toFixed(2)}</p>
                                             </div>
-                                        ))}
-                                    </div>
+                                            <span className="font-black">₹{(i.rate * i.qty).toFixed(2)}</span>
+                                        </div>
+                                    ))}
+                                </div>
 
-                                    <div className="pt-2">
-                                        <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">{T.name}</label>
-                                        <input 
-                                            className="w-full bg-slate-100 p-4 rounded-xl font-black border-2 border-transparent focus:border-yellow-400 outline-none" 
-                                            placeholder="Enter Customer Name..." 
-                                            value={customerName} 
-                                            onChange={e => setCustomerName(e.target.value)}
-                                            disabled={isBillGenerated}
-                                        />
+                                <div className="bg-slate-50 p-6 rounded-[2.5rem] border">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase">Subtotal</span>
+                                        <span className="text-2xl font-black">₹{grandTotal.toLocaleString()}</span>
                                     </div>
+                                    <input className="w-full bg-white p-4 rounded-2xl font-bold border-2 focus:border-yellow-400 outline-none" placeholder="Customer Name" value={customerName} onChange={e => setCustomerName(e.target.value)} disabled={isBillGenerated} />
                                 </div>
 
                                 {!isBillGenerated ? (
-                                    <button 
-                                        onClick={handleGenerateBillAction}
-                                        className="w-full bg-slate-900 text-white p-5 rounded-2xl font-black flex items-center justify-center gap-2"
-                                    >
-                                        <Icon name="check" /> Generate Bill
+                                    <button disabled={!customerName.trim()} onClick={handleFinalizeBill} className="w-full bg-slate-900 text-white p-6 rounded-3xl font-black flex items-center justify-center gap-3 tap-scale">
+                                        <Icon name="check" /> Finalize Bill
                                     </button>
                                 ) : (
-                                    <div className="space-y-3 pt-2">
-                                        <div className="text-center pb-4">
-                                            <p className="text-xs font-bold text-green-500">✓ Bill Generated Successfully!</p>
-                                            <p className="text-2xl font-black">₹{grandTotal.toFixed(2)}</p>
+                                    <div className="space-y-4 animate-scale-in">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <button onClick={sendWhatsApp} className="w-full bg-[#25D366] text-white p-5 rounded-3xl font-black flex flex-col items-center justify-center gap-1 tap-scale">
+                                                <Icon name="whatsapp" /> <span className="text-[10px] uppercase">WhatsApp</span>
+                                            </button>
+                                            <button onClick={downloadPDF} className="w-full bg-blue-500 text-white p-5 rounded-3xl font-black flex flex-col items-center justify-center gap-1 tap-scale">
+                                                <Icon name="download" /> <span className="text-[10px] uppercase">PDF</span>
+                                            </button>
                                         </div>
-                                        <button onClick={sendWhatsApp} className="w-full bg-green-500 text-white p-5 rounded-2xl font-black flex items-center justify-center gap-2 shadow-lg shadow-green-100">
-                                            <Icon name="whatsapp" /> {T.whatsapp}
-                                        </button>
-                                        <button onClick={downloadPDF} className="w-full bg-slate-900 text-white p-5 rounded-2xl font-black text-sm flex items-center justify-center gap-2">
-                                            <Icon name="file" /> {T.pdf}
-                                        </button>
+                                        <button onClick={resetApp} className="w-full bg-slate-900 text-white p-5 rounded-3xl font-black uppercase text-[10px] tracking-widest">{T.newBill}</button>
                                     </div>
                                 )}
                             </div>
