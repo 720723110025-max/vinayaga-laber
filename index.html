@@ -4,17 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sri Vinayaga Laber Works</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React and Babel -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- PDF Generation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
-        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
-        .cart-animation { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1rem; }
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        select { 
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); 
+            background-repeat: no-repeat; 
+            background-position: right 0.75rem center; 
+            background-size: 1rem; 
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
@@ -47,88 +57,105 @@
 
         const PRODUCT_DATA = {
             pipes: [
-                { size: 20, pieces: 40, rates: { "10 Kgs": 1.15, "15 Kgs": 1.20 } },
-                { size: 25, pieces: 38, rates: { "10 Kgs": 1.44, "15 Kgs": 1.70 } },
-                { size: 32, pieces: 30, rates: { "10 Kgs": 2.30, "15 Kgs": 2.50 } },
-                { size: 40, pieces: 26, rates: { "6 Kgs": 2.50, "10 Kgs": 3.50, "15 Kgs": 3.50 } },
-                { size: 50, pieces: 20, rates: { "6 Kgs": 4.00, "10 Kgs": 4.50, "15 Kgs": 4.50, "5 Bend": 6.10 } },
-                { size: 63, pieces: 17, rates: { "4 Kgs": 5.00, "6 Kgs": 6.00, "5 Bend": 6.90 } },
-                { size: 75, pieces: 15, rates: { "4 Kgs": 6.00, "6 Kgs": 7.00, "5 Bend": 8.70 } },
-                { size: 90, pieces: 13, rates: { "4 Kgs": 8.00, "6 Kgs": 9.00, "5 Bend": 10.62 } },
-                { size: 110, pieces: 11, rates: { "4 Kgs": 11.00, "6 Kgs": 12.65, "5 Bend": 12.65 } },
-                { size: 140, pieces: 8, rates: { "4 Kgs": 65.00, "6 Kgs": 80.00, "5 Bend": 115.00 } },
-                { size: 160, pieces: 6, rates: { "4 Kgs": 100.00, "6 Kgs": 115.00, "5 Bend": 172.50 } },
-                { size: 180, pieces: 5, rates: { "4 Kgs": 170.00, "6 Kgs": 195.50 } },
-                { size: 200, pieces: 5, rates: { "4 Kgs": 220.00, "6 Kgs": 245.50 } },
+                { size: 20, rates: { "15 Kgs": 1.40 } },
+                { size: 25, rates: { "10 Kgs": 1.50, "15 Kgs": 2.00 } },
+                { size: 32, rates: { "10 Kgs": 2.50, "15 Kgs": 2.80 } },
+                { size: 40, rates: { "6 Kgs": 3.00, "10 Kgs": 4.00, "15 Kgs": 3.70 } },
+                { size: 50, rates: { "6 Kgs": 4.00, "10 Kgs": 6.00, "15 Kgs": 4.95, "S-Bend": 8.00 } },
+                { size: 63, rates: { "4 Kgs": 6.50, "6 Kgs": 7.00, "S-Bend": 9.00 } },
+                { size: 75, rates: { "4 Kgs": 7.50, "6 Kgs": 8.60, "S-Bend": 10.00 } },
+                { size: 90, rates: { "4 Kgs": 9.50, "6 Kgs": 11.50, "S-Bend": 13.00 } },
+                { size: 110, rates: { "4 Kgs": 13.50, "6 Kgs": 15.00, "S-Bend": 17.00 } },
+                { size: 140, rates: { "4 Kgs": 65.00, "6 Kgs": 80.00, "S-Bend": 115.00 } },
+                { size: 160, rates: { "4 Kgs": 100.00, "6 Kgs": 115.00, "S-Bend": 172.50 } },
+                { size: 180, rates: { "4 Kgs": 170.00, "6 Kgs": 195.50 } },
+                { size: 200, rates: { "4 Kgs": 220.00, "6 Kgs": 245.50 } },
+            ],
+            coupler: [
+                { size: 20, rates: { "15 Kgs": 1.00 } },
+                { size: 25, rates: { "10 Kgs": 1.15, "15 Kgs": 1.30 } },
+                { size: 32, rates: { "10 Kgs": 1.40, "15 Kgs": 1.50 } },
+                { size: 40, rates: { "6 Kgs": 2.00, "10 Kgs": 2.30, "15 Kgs": 2.35 } },
+                { size: 50, rates: { "6 Kgs": 2.30, "10 Kgs": 2.50 } },
+                { size: 63, rates: { "4 Kgs": 3.00, "6 Kgs": 3.45 } },
+                { size: 75, rates: { "4 Kgs": 3.45, "6 Kgs": 4.00 } },
+                { size: 90, rates: { "4 Kgs": 4.50, "6 Kgs": 5.20 } },
+                { size: 110, rates: { "4 Kgs": 5.20, "6 Kgs": 6.30 } },
+                { size: 140, rates: { "4 Kgs": 8.60, "6 Kgs": 9.00 } },
+                { size: 160, rates: { "4 Kgs": 11.50, "6 Kgs": 12.65 } },
             ],
             jetFootvale: [
-                { name: "50*6", rate: 25.00 },
-                { name: "50*15", rate: 30.00 },
-                { name: "50*32", rate: 30.00 },
-                { name: "50*40", rate: 40.00 },
-                { name: "63*6", rate: 40.00 },
+                { name: "50*6", rate: 30.00 },
+                { name: "50*15", rate: 35.00 },
+                { name: "50*32", rate: 45.00 },
+                { name: "50*40", rate: 55.00 },
+                { name: "63*6", rate: 45.00 },
+                { name: "63*15", rate: 55.00 },
             ],
-            longCoupler: [
-                { size: 32, rates: { "10 KG": 4.00, "15 KG": 5.00 } },
-                { size: 40, rates: { "6 KG": 4.00, "10 KG": 5.00 } },
-                { size: 50, rates: { "6 KG": 5.00 } },
-                { size: 63, rates: { "4 KG": 6.50, "6 KG": 7.00 } },
-                { size: 75, rates: { "4 KG": 7.50, "6 KG": 8.00 } },
-                { size: 90, rates: { "4 KG": 8.50, "6 KG": 9.00 } },
-                { size: 110, rates: { "4 KG": 9.50, "6 KG": 10.00 } },
-                { size: 140, rates: { "4 KG": 15.50, "6 KG": 18.00 } },
-                { size: 160, rates: { "4 KG": 18.50, "6 KG": 20.00 } },
-            ]
         };
 
-        const UI_TEXT = {
+        const TRANSLATIONS = {
+            en: {
+                title: "Sri Vinayaga Laber Works",
+                subtitle: "Sri Pachaiamman Thunai",
+                address: "Sinthan Nagar, Krishnampalayam, Erode - 03",
+                contact: "Cell: 9095786363, 8015767107",
+                bend: "BEND",
+                coupler: "COUPLER",
+                jet: "JET FOOTVALE",
+                add: "Add to Bill",
+                total: "Total",
+                checkout: "Send via WhatsApp",
+                downloadPdf: "Download PDF Bill",
+                nameLabel: "Customer/Shop Name",
+                shopTab: "Shop",
+                recordsTab: "History",
+                cartTitle: "Current Order",
+                viewCart: "Check Bill",
+                empty: "No items added",
+                adminLogin: "Admin Login",
+                recentBills: "Recent Orders",
+                logout: "Logout",
+                weight: "Weight/Type",
+                size: "Size (mm)",
+            },
             ta: {
                 title: "ஸ்ரீ விநாயகா லேபர் ஒர்க்ஸ்",
                 subtitle: "ஸ்ரீ பச்சையம்மன் துணை",
-                pvcPipes: "PVC பெண்ட்",
-                jetFootvale: "ஜெட் புட்வால்வ்",
-                longCoupler: "லாங் கப்ளர்",
-                add: "பில்லில் சேர்க்க",
-                total: "மொத்த தொகை",
-                checkout: "பில் அனுப்பவும்",
-                namePlaceholder: "வாடிக்கையாளர் பெயர்",
-                shop: "கடை",
-                records: "பதிவுகள்",
-                itemsInCart: "பொருட்கள்",
-                emptyCart: "பட்டியல் காலியாக உள்ளது"
+                address: "சிந்தன் நகர், கிருஷ்ணம்பாளையம், ஈரோடு - 03",
+                contact: "செல்: 9095786363, 8015767107",
+                bend: "பெண்ட் (BEND)",
+                coupler: "கப்ளர் (COUPLER)",
+                jet: "ஜெட் (JET FOOTVALE)",
+                add: "சேர்க்க",
+                total: "மொத்தம்",
+                checkout: "WhatsApp அனுப்ப",
+                downloadPdf: "PDF பில் பதிவிறக்க",
+                nameLabel: "பெயர் / கடை",
+                shopTab: "விற்பனை",
+                recordsTab: "பதிவுகள்",
+                cartTitle: "பட்டியல்",
+                viewCart: "பில் பார்க்க",
+                empty: "பட்டியல் காலியாக உள்ளது",
+                adminLogin: "அட்மின் உள்நுழைவு",
+                recentBills: "சமீபத்திய பில்கள்",
+                logout: "வெளியேறு",
+                weight: "எடை/வகை",
+                size: "அளவு (மிமீ)",
             }
         };
 
         const Icon = ({ name, className = "" }) => {
             const icons = {
-                shopping: (
-                    <React.Fragment>
-                        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
-                        <path d="M3 6h18" />
-                        <path d="M16 10a4 4 0 0 1-8 0" />
-                    </React.Fragment>
-                ),
-                records: (
-                    <React.Fragment>
-                        <rect width="18" height="18" x="3" y="3" rx="2" />
-                        <path d="M7 7h10" />
-                        <path d="M7 12h10" />
-                        <path d="M7 17h10" />
-                    </React.Fragment>
-                ),
+                shopping: (<g><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></g>),
+                records: (<g><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h10"/><path d="M7 12h10"/><path d="M7 17h10"/></g>),
                 plus: <path d="M12 5v14M5 12h14" />,
-                send: (
-                    <React.Fragment>
-                        <path d="m22 2-7 20-4-9-9-4Z" />
-                        <path d="M22 2 11 13" />
-                    </React.Fragment>
-                ),
-                trash: (
-                    <React.Fragment>
-                        <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                    </React.Fragment>
-                ),
-                chevron: <path d="m6 9 6 6 6-6" />
+                minus: <path d="M5 12h14" />,
+                send: <path d="m22 2-7 20-4-9-9-4ZM22 2 11 13" />,
+                close: <path d="M18 6 6 18M6 6l12 12" />,
+                globe: (<g><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20"/><path d="M12 2a14.5 14.5 0 0 1 0 20"/><path d="M2 12h20"/></g>),
+                cart: (<g><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></g>),
+                file: (<g><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></g>)
             };
             return (
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -138,7 +165,9 @@
         };
 
         function App() {
+            const [lang, setLang] = useState('ta');
             const [view, setView] = useState('shop');
+            const [showCart, setShowCart] = useState(false);
             const [user, setUser] = useState(null);
             const [cart, setCart] = useState([]);
             const [customerName, setCustomerName] = useState('');
@@ -147,43 +176,32 @@
             const [pass, setPass] = useState('');
             const [orders, setOrders] = useState([]);
 
-            // Selection States
             const [pSize, setPSize] = useState(PRODUCT_DATA.pipes[0].size);
             const [pWeight, setPWeight] = useState(Object.keys(PRODUCT_DATA.pipes[0].rates)[0]);
+            const [cSize, setCSize] = useState(PRODUCT_DATA.coupler[0].size);
+            const [cWeight, setCWeight] = useState(Object.keys(PRODUCT_DATA.coupler[0].rates)[0]);
             const [jName, setJName] = useState(PRODUCT_DATA.jetFootvale[0].name);
-            const [cSize, setCSize] = useState(PRODUCT_DATA.longCoupler[0].size);
-            const [cWeight, setCWeight] = useState(Object.keys(PRODUCT_DATA.longCoupler[0].rates)[0]);
 
-            const T = UI_TEXT.ta;
+            const T = TRANSLATIONS[lang];
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'v-laber-works-v1';
 
             useEffect(() => {
                 const init = async () => {
                     if (!window.fb) return;
                     const { auth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } = window.fb;
-                    
                     try {
                         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                             await signInWithCustomToken(auth, __initial_auth_token);
                         } else {
                             await signInAnonymously(auth);
                         }
-                    } catch (e) {
-                        console.error("Auth failed", e);
-                    }
-                    
+                    } catch (e) {}
                     const unsubscribe = onAuthStateChanged(auth, setUser);
                     return unsubscribe;
                 };
-                
                 let unsubscribe;
-                if (window.fb) {
-                    init().then(unsub => unsubscribe = unsub);
-                } else {
-                    window.addEventListener('firebase-ready', () => {
-                        init().then(unsub => unsubscribe = unsub);
-                    });
-                }
+                if (window.fb) { init().then(unsub => unsubscribe = unsub); }
+                else { window.addEventListener('firebase-ready', () => { init().then(unsub => unsubscribe = unsub); }); }
                 return () => unsubscribe && unsubscribe();
             }, []);
 
@@ -197,7 +215,9 @@
                 return unsubscribe;
             }, [user, isAdmin, view]);
 
-            const addToCart = (id, label, rate) => {
+            const addToCart = (id, labelEn, labelTa, rate) => {
+                if (!rate) return;
+                const label = lang === 'en' ? labelEn : labelTa;
                 setCart(curr => {
                     const exists = curr.find(i => i.id === id);
                     if (exists) return curr.map(i => i.id === id ? {...i, qty: i.qty + 1} : i);
@@ -205,128 +225,209 @@
                 });
             };
 
-            const removeFromCart = (id) => setCart(c => c.filter(i => i.id !== id));
+            const updateQty = (id, delta) => {
+                setCart(curr => curr.map(i => {
+                    if (i.id === id) {
+                        const newQty = Math.max(1, i.qty + delta);
+                        return {...i, qty: newQty};
+                    }
+                    return i;
+                }));
+            };
 
             const grandTotal = useMemo(() => cart.reduce((acc, i) => acc + (i.rate * i.qty), 0), [cart]);
 
+            const generatePDF = () => {
+                if (!customerName.trim()) { alert(lang === 'ta' ? "பெயரை உள்ளிடவும்" : "Enter Name"); return; }
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Header
+                doc.setFontSize(10);
+                doc.text(T.subtitle, 105, 15, { align: 'center' });
+                doc.setFontSize(22);
+                doc.setFont('helvetica', 'bold');
+                doc.text(T.title, 105, 25, { align: 'center' });
+                
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.text(T.address, 105, 32, { align: 'center' });
+                doc.text(T.contact, 105, 37, { align: 'center' });
+
+                // Divider
+                doc.setLineWidth(0.5);
+                doc.line(20, 42, 190, 42);
+
+                // Info Section
+                doc.setFontSize(12);
+                doc.text(`Customer: ${customerName}`, 20, 52);
+                doc.text(`Date: ${new Date().toLocaleDateString()}`, 190, 52, { align: 'right' });
+
+                // Table
+                const tableRows = cart.map((item, index) => [
+                    index + 1,
+                    item.label,
+                    item.qty,
+                    item.rate.toFixed(2),
+                    (item.rate * item.qty).toFixed(2)
+                ]);
+
+                doc.autoTable({
+                    startY: 60,
+                    head: [['S.No', 'Product Description', 'Qty', 'Rate', 'Amount']],
+                    body: tableRows,
+                    theme: 'striped',
+                    headStyles: { fillColor: [44, 62, 80] },
+                    foot: [['', '', '', 'Total', `Rs. ${grandTotal.toFixed(2)}`]],
+                    footStyles: { fillColor: [241, 196, 15], textColor: [44, 62, 80], fontStyle: 'bold' }
+                });
+
+                // Footer
+                const finalY = doc.lastAutoTable.finalY + 20;
+                doc.text('For SRI VINAYAGA LABER WORKS', 190, finalY, { align: 'right' });
+                doc.text('Authorised Signature', 190, finalY + 15, { align: 'right' });
+
+                doc.save(`Bill_${customerName}_${Date.now()}.pdf`);
+            };
+
             const handleCheckout = async () => {
-                if (!customerName.trim()) { alert("வாடிக்கையாளர் பெயரை உள்ளிடவும்"); return; }
-                if (!user) { alert("Authentication not ready. Please wait."); return; }
+                if (!customerName.trim()) { alert(lang === 'ta' ? "பெயரை உள்ளிடவும்" : "Enter Name"); return; }
                 setIsCheckingOut(true);
                 try {
                     const { db, collection, addDoc, serverTimestamp } = window.fb;
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), {
-                        customerName, items: cart, total: grandTotal, createdAt: serverTimestamp(), userId: user.uid
+                        customerName, items: cart, total: grandTotal, createdAt: serverTimestamp(), userId: user?.uid
                     });
-                    const msg = `*SRI VINAYAGA LABER WORKS*\n*Customer:* ${customerName}\n*Total:* ₹${grandTotal}\n\n*Items:*\n${cart.map(i => `- ${i.label} (x${i.qty}): ₹${i.rate*i.qty}`).join('\n')}`;
+                    const header = lang === 'ta' ? '*ஸ்ரீ விநாயகா லேபர் ஒர்க்ஸ்*' : '*SRI VINAYAGA LABER WORKS*';
+                    const msg = `${header}\n*Customer:* ${customerName}\n*Total:* ₹${grandTotal.toFixed(2)}\n\n*Items:*\n${cart.map(i => `- ${i.label} (x${i.qty}): ₹${(i.rate*i.qty).toFixed(2)}`).join('\n')}`;
                     window.open(`https://wa.me/918643861100?text=${encodeURIComponent(msg)}`);
-                    setCart([]); setCustomerName('');
-                } catch (e) { console.error("Error: " + e.message); }
+                    setCart([]); setCustomerName(''); setShowCart(false);
+                } catch (e) { alert("Error: " + e.message); }
                 setIsCheckingOut(false);
             };
 
+            const currentBendRate = PRODUCT_DATA.pipes.find(p => p.size === pSize)?.rates[pWeight] || 0;
+            const currentCouplerRate = PRODUCT_DATA.coupler.find(p => p.size === cSize)?.rates[cWeight] || 0;
+            const currentJetRate = PRODUCT_DATA.jetFootvale.find(j => j.name === jName)?.rate || 0;
+
             return (
-                <div className="flex flex-col min-h-screen">
-                    <header className="bg-yellow-400 p-6 pt-8 text-center shadow-lg sticky top-0 z-40">
-                        <p className="text-[10px] font-bold tracking-[0.2em] opacity-80 uppercase mb-1">{T.subtitle}</p>
-                        <h1 className="text-2xl font-black tracking-tight">{T.title}</h1>
+                <div className="flex flex-col min-h-screen bg-slate-50">
+                    <header className="bg-yellow-400 p-6 pt-10 text-center shadow-md sticky top-0 z-40">
+                        <button 
+                            onClick={() => setLang(l => l === 'en' ? 'ta' : 'en')}
+                            className="absolute right-4 top-4 bg-white/30 backdrop-blur-md p-2 px-3 rounded-full flex items-center gap-2 text-[10px] font-black uppercase shadow-sm border border-white/20"
+                        >
+                            <Icon name="globe" className="w-3 h-3" />
+                            {lang === 'en' ? 'தமிழ்' : 'English'}
+                        </button>
+                        <p className="text-[10px] font-black tracking-widest opacity-80 uppercase mb-1">{T.subtitle}</p>
+                        <h1 className="text-xl font-black tracking-tighter text-slate-900 leading-tight">{T.title}</h1>
                     </header>
 
-                    <main className="flex-1 p-4 pb-48 max-w-2xl mx-auto w-full space-y-6">
+                    <main className="flex-1 p-5 pb-40 max-w-2xl mx-auto w-full space-y-6 mt-2">
                         {view === 'shop' ? (
                             <React.Fragment>
-                                {/* PVC Pipe Selection */}
-                                <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
-                                    <div className="flex items-center gap-3 mb-5">
-                                        <div className="bg-yellow-100 text-yellow-700 p-2.5 rounded-xl"><Icon name="shopping" /></div>
-                                        <h2 className="font-extrabold text-lg uppercase tracking-tight">{T.pvcPipes}</h2>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4 mb-4">
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase px-1">Size</p>
-                                            <select className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold appearance-none cursor-pointer" value={pSize} onChange={e => {setPSize(Number(e.target.value)); setPWeight(Object.keys(PRODUCT_DATA.pipes.find(p=>p.size === Number(e.target.value)).rates)[0])}}>
+                                <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
+                                    <h2 className="font-black text-[11px] uppercase tracking-widest text-slate-400 mb-4">{T.bend}</h2>
+                                    <div className="grid grid-cols-2 gap-4 mb-5">
+                                        <div>
+                                            <label className="text-[9px] font-black text-slate-400 ml-1 uppercase">{T.size}</label>
+                                            <select className="w-full bg-slate-50 rounded-xl p-3 text-sm font-bold border border-slate-100 outline-none ring-yellow-400/30 focus:ring-4" 
+                                                value={pSize} onChange={e => {
+                                                    const newSize = Number(e.target.value);
+                                                    setPSize(newSize);
+                                                    setPWeight(Object.keys(PRODUCT_DATA.pipes.find(p => p.size === newSize).rates)[0]);
+                                                }}>
                                                 {PRODUCT_DATA.pipes.map(p => <option key={p.size} value={p.size}>{p.size}mm</option>)}
                                             </select>
                                         </div>
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase px-1">Weight</p>
-                                            <select className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold appearance-none cursor-pointer" value={pWeight} onChange={e => setPWeight(e.target.value)}>
-                                                {Object.keys(PRODUCT_DATA.pipes.find(p=>p.size === pSize).rates).map(w => <option key={w} value={w}>{w}</option>)}
+                                        <div>
+                                            <label className="text-[9px] font-black text-slate-400 ml-1 uppercase">{T.weight}</label>
+                                            <select className="w-full bg-slate-50 rounded-xl p-3 text-sm font-bold border border-slate-100 outline-none ring-yellow-400/30 focus:ring-4" 
+                                                value={pWeight} onChange={e => setPWeight(e.target.value)}>
+                                                {Object.keys(PRODUCT_DATA.pipes.find(p => p.size === pSize).rates).map(w => <option key={w} value={w}>{w}</option>)}
                                             </select>
                                         </div>
                                     </div>
-                                    <button onClick={() => addToCart(`p-${pSize}-${pWeight}`, `${pSize}mm Bend (${pWeight})`, PRODUCT_DATA.pipes.find(p=>p.size === pSize).rates[pWeight])} className="w-full bg-yellow-400 hover:bg-yellow-500 active:scale-95 transition-all p-4 rounded-2xl font-black flex items-center justify-center gap-2 shadow-sm">
-                                        <Icon name="plus" /> {T.add} (₹{PRODUCT_DATA.pipes.find(p=>p.size === pSize).rates[pWeight]})
+                                    <button onClick={() => addToCart(`b-${pSize}-${pWeight}`, `${pSize}mm Bend ${pWeight}`, `${pSize}மிமீ பெண்ட் ${pWeight}`, currentBendRate)} 
+                                        className="w-full bg-yellow-400 hover:bg-yellow-500 active:scale-[0.98] transition-all py-4 rounded-xl font-black text-xs flex items-center justify-center gap-3 shadow-md">
+                                        <Icon name="plus" className="w-4 h-4" /> {T.add} (₹{currentBendRate.toFixed(2)})
                                     </button>
                                 </div>
 
-                                {/* Jet Footvale */}
-                                <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
-                                    <div className="flex items-center gap-3 mb-5">
-                                        <div className="bg-blue-100 text-blue-700 p-2.5 rounded-xl"><Icon name="shopping" /></div>
-                                        <h2 className="font-extrabold text-lg uppercase tracking-tight">{T.jetFootvale}</h2>
+                                <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
+                                    <h2 className="font-black text-[11px] uppercase tracking-widest text-slate-400 mb-4">{T.coupler}</h2>
+                                    <div className="grid grid-cols-2 gap-4 mb-5">
+                                        <div>
+                                            <label className="text-[9px] font-black text-slate-400 ml-1 uppercase">{T.size}</label>
+                                            <select className="w-full bg-slate-50 rounded-xl p-3 text-sm font-bold border border-slate-100 outline-none ring-blue-400/30 focus:ring-4" 
+                                                value={cSize} onChange={e => {
+                                                    const newSize = Number(e.target.value);
+                                                    setCSize(newSize);
+                                                    setCWeight(Object.keys(PRODUCT_DATA.coupler.find(p => p.size === newSize).rates)[0]);
+                                                }}>
+                                                {PRODUCT_DATA.coupler.map(p => <option key={p.size} value={p.size}>{p.size}mm</option>)}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-[9px] font-black text-slate-400 ml-1 uppercase">{T.weight}</label>
+                                            <select className="w-full bg-slate-50 rounded-xl p-3 text-sm font-bold border border-slate-100 outline-none ring-blue-400/30 focus:ring-4" 
+                                                value={cWeight} onChange={e => setCWeight(e.target.value)}>
+                                                {Object.keys(PRODUCT_DATA.coupler.find(p => p.size === cSize).rates).map(w => <option key={w} value={w}>{w}</option>)}
+                                            </select>
+                                        </div>
                                     </div>
-                                    <div className="space-y-1 mb-4">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase px-1">Select Model</p>
-                                        <select className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold appearance-none cursor-pointer" value={jName} onChange={e => setJName(e.target.value)}>
+                                    <button onClick={() => addToCart(`c-${cSize}-${cWeight}`, `${cSize}mm Coupler ${cWeight}`, `${cSize}மிமீ கப்ளர் ${cWeight}`, currentCouplerRate)} 
+                                        className="w-full bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98] transition-all py-4 rounded-xl font-black text-xs flex items-center justify-center gap-3 shadow-md">
+                                        <Icon name="plus" className="w-4 h-4" /> {T.add} (₹{currentCouplerRate.toFixed(2)})
+                                    </button>
+                                </div>
+
+                                <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
+                                    <h2 className="font-black text-[11px] uppercase tracking-widest text-slate-400 mb-4">{T.jet}</h2>
+                                    <div className="mb-5">
+                                        <label className="text-[9px] font-black text-slate-400 ml-1 uppercase">{T.size}</label>
+                                        <select className="w-full bg-slate-50 rounded-xl p-3 text-sm font-bold border border-slate-100 outline-none ring-slate-400/30 focus:ring-4" 
+                                            value={jName} onChange={e => setJName(e.target.value)}>
                                             {PRODUCT_DATA.jetFootvale.map(j => <option key={j.name} value={j.name}>{j.name}</option>)}
                                         </select>
                                     </div>
-                                    <button onClick={() => addToCart(`j-${jName}`, `Jet Footvale ${jName}`, PRODUCT_DATA.jetFootvale.find(j=>j.name===jName).rate)} className="w-full bg-blue-600 text-white hover:bg-blue-700 active:scale-95 transition-all p-4 rounded-2xl font-black flex items-center justify-center gap-2 shadow-sm">
-                                        <Icon name="plus" /> {T.add} (₹{PRODUCT_DATA.jetFootvale.find(j=>j.name===jName).rate})
-                                    </button>
-                                </div>
-
-                                {/* Long Coupler */}
-                                <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
-                                    <div className="flex items-center gap-3 mb-5">
-                                        <div className="bg-purple-100 text-purple-700 p-2.5 rounded-xl"><Icon name="shopping" /></div>
-                                        <h2 className="font-extrabold text-lg uppercase tracking-tight">{T.longCoupler}</h2>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4 mb-4">
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase px-1">Size</p>
-                                            <select className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold appearance-none cursor-pointer" value={cSize} onChange={e => {setCSize(Number(e.target.value)); setCWeight(Object.keys(PRODUCT_DATA.longCoupler.find(p=>p.size === Number(e.target.value)).rates)[0])}}>
-                                                {PRODUCT_DATA.longCoupler.map(p => <option key={p.size} value={p.size}>{p.size}mm</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase px-1">Weight</p>
-                                            <select className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold appearance-none cursor-pointer" value={cWeight} onChange={e => setCWeight(e.target.value)}>
-                                                {Object.keys(PRODUCT_DATA.longCoupler.find(p=>p.size === cSize).rates).map(w => <option key={w} value={w}>{w}</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <button onClick={() => addToCart(`c-${cSize}-${cWeight}`, `${cSize}mm Long Coupler (${cWeight})`, PRODUCT_DATA.longCoupler.find(p=>p.size === cSize).rates[cWeight])} className="w-full bg-purple-600 text-white hover:bg-purple-700 active:scale-95 transition-all p-4 rounded-2xl font-black flex items-center justify-center gap-2 shadow-sm">
-                                        <Icon name="plus" /> {T.add} (₹{PRODUCT_DATA.longCoupler.find(p=>p.size === cSize).rates[cWeight]})
+                                    <button onClick={() => addToCart(`j-${jName}`, `Jet ${jName}`, `ஜெட் ${jName}`, currentJetRate)} 
+                                        className="w-full bg-slate-900 text-white hover:bg-black active:scale-[0.98] transition-all py-4 rounded-xl font-black text-xs flex items-center justify-center gap-3 shadow-md">
+                                        <Icon name="plus" className="w-4 h-4" /> {T.add} (₹{currentJetRate.toFixed(2)})
                                     </button>
                                 </div>
                             </React.Fragment>
                         ) : (
-                            <div className="space-y-6">
+                            <div className="space-y-4">
                                 {!isAdmin ? (
-                                    <div className="bg-white p-8 rounded-[2.5rem] text-center space-y-6 shadow-sm mt-10">
-                                        <h3 className="text-xl font-black">Admin Login</h3>
-                                        <input type="password" placeholder="Passcode" className="w-full p-4 rounded-2xl bg-slate-100 font-bold text-center outline-none border-2 border-transparent focus:border-yellow-400" value={pass} onChange={e=>setPass(e.target.value)}/>
-                                        <button onClick={() => pass === "1234" ? setIsAdmin(true) : alert("தவறான கடவுச்சொல்")} className="w-full bg-slate-900 text-white p-4 rounded-2xl font-black">Unlock</button>
+                                    <div className="bg-white p-10 rounded-[2rem] text-center space-y-6 shadow-sm border border-slate-100">
+                                        <h3 className="font-black text-lg">{T.adminLogin}</h3>
+                                        <input type="password" placeholder="****" className="w-full p-4 rounded-xl bg-slate-100 font-black text-center text-xl outline-none ring-yellow-400 focus:ring-4" value={pass} onChange={e=>setPass(e.target.value)}/>
+                                        <button onClick={() => pass === "1234" ? setIsAdmin(true) : alert("Invalid")} className="w-full bg-slate-900 text-white p-4 rounded-xl font-black shadow-lg">Login</button>
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
-                                        <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm">
-                                            <h3 className="font-black text-slate-400 uppercase text-xs tracking-widest">Sales History</h3>
-                                            <button onClick={()=>setIsAdmin(false)} className="text-xs font-bold text-red-500 uppercase">Logout</button>
+                                        <div className="flex justify-between items-center px-2">
+                                            <h3 className="font-black text-[10px] uppercase tracking-widest text-slate-400">{T.recentBills}</h3>
+                                            <button onClick={()=>setIsAdmin(false)} className="text-xs text-red-500 font-black uppercase tracking-tighter">{T.logout}</button>
                                         </div>
-                                        {orders.length === 0 ? <p className="text-center text-slate-400 font-bold p-10">No records found.</p> : orders.map(o => (
-                                            <div key={o.id} className="bg-white p-5 rounded-2xl shadow-sm space-y-3">
-                                                <div className="flex justify-between items-start">
+                                        {orders.map(o => (
+                                            <div key={o.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+                                                <div className="flex justify-between mb-4">
                                                     <div>
-                                                        <p className="font-black text-lg">{o.customerName}</p>
-                                                        <p className="text-[10px] font-bold text-slate-400">{o.createdAt?.toDate ? o.createdAt.toDate().toLocaleString() : 'Just now'}</p>
+                                                        <p className="font-black text-base">{o.customerName}</p>
+                                                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">{o.createdAt?.toDate ? o.createdAt.toDate().toLocaleString() : '...'}</p>
                                                     </div>
-                                                    <p className="text-xl font-black text-green-600">₹{o.total}</p>
+                                                    <p className="font-black text-lg text-green-600">₹{o.total?.toFixed(2)}</p>
                                                 </div>
-                                                <div className="bg-slate-50 p-3 rounded-xl space-y-1">
-                                                    {o.items?.map((i,idx) => <p key={idx} className="text-[10px] font-bold text-slate-500 flex justify-between"><span>{i.qty}x {i.label}</span><span>₹{i.rate*i.qty}</span></p>)}
+                                                <div className="space-y-1 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                                    {o.items?.map((i,idx) => (
+                                                        <div key={idx} className="flex justify-between text-[10px] font-bold text-slate-500">
+                                                            <span className="truncate pr-4">{i.qty} x {i.label}</span>
+                                                            <span className="shrink-0">₹{(i.rate * i.qty).toFixed(2)}</span>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
                                         ))}
@@ -336,48 +437,84 @@
                         )}
                     </main>
 
-                    {/* Fixed Cart Footer */}
-                    {cart.length > 0 && view === 'shop' && (
-                        <div className="fixed bottom-24 left-4 right-4 bg-slate-900 text-white p-6 rounded-[2.5rem] shadow-2xl space-y-4 z-50 cart-animation">
-                            <div className="flex justify-between items-center border-b border-white/10 pb-4">
-                                <p className="text-[10px] font-black uppercase tracking-widest opacity-50">{T.itemsInCart} ({cart.reduce((a, b) => a + b.qty, 0)})</p>
-                                <button onClick={()=>setCart([])} className="text-white/40 hover:text-white"><Icon name="trash" /></button>
-                            </div>
-                            <div className="max-h-32 overflow-y-auto space-y-2 pr-2">
-                                {cart.map(item => (
-                                    <div key={item.id} className="flex justify-between items-center text-xs font-bold">
-                                        <span className="opacity-80 truncate mr-2">{item.qty}x {item.label}</span>
-                                        <div className="flex items-center gap-3">
-                                            <span>₹{item.rate * item.qty}</span>
-                                            <button onClick={() => removeFromCart(item.id)} className="text-red-400"><Icon name="trash" className="w-3 h-3" /></button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="pt-2 flex justify-between items-end">
-                                <span className="text-[10px] font-black opacity-50 uppercase">{T.total}</span>
-                                <span className="text-2xl font-black text-yellow-400">₹{grandTotal}</span>
-                            </div>
-                            <div className="flex flex-col gap-3">
-                                <input className="w-full bg-white/10 border border-white/10 p-4 rounded-2xl outline-none focus:bg-white/20 font-bold placeholder:text-white/20 text-white" placeholder={T.namePlaceholder} value={customerName} onChange={e=>setCustomerName(e.target.value)} />
-                                <button onClick={handleCheckout} disabled={isCheckingOut} className="w-full bg-green-500 p-4 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-green-400 active:scale-95 disabled:opacity-50 text-slate-900">
-                                    <Icon name="send" /> {T.checkout}
-                                </button>
-                            </div>
+                    {/* Check Bill Bubble */}
+                    {cart.length > 0 && view === 'shop' && !showCart && (
+                        <div className="fixed bottom-24 right-6 z-50">
+                            <button 
+                                onClick={() => setShowCart(true)} 
+                                className="bg-slate-900 text-white p-4 pr-6 rounded-full shadow-2xl flex items-center gap-3 border border-white/20 animate-in zoom-in duration-300"
+                            >
+                                <div className="bg-yellow-400 text-slate-900 w-8 h-8 rounded-full flex items-center justify-center font-black text-xs">
+                                    {cart.reduce((a, b) => a + b.qty, 0)}
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-[9px] font-black uppercase tracking-widest opacity-60 leading-none mb-1">{T.viewCart}</p>
+                                    <p className="text-lg font-black text-yellow-400 leading-none">₹{grandTotal.toFixed(2)}</p>
+                                </div>
+                            </button>
                         </div>
                     )}
 
-                    {/* Bottom Navigation */}
-                    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex items-center justify-around h-20 px-10 z-50">
+                    {/* Navigation */}
+                    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around h-20 items-center z-40 px-6 safe-area-bottom shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
                         <button onClick={() => setView('shop')} className={`flex flex-col items-center gap-1 transition-all ${view === 'shop' ? 'text-yellow-600 scale-110' : 'text-slate-300'}`}>
-                            <Icon name="shopping" />
-                            <span className="text-[10px] font-black uppercase tracking-tighter">{T.shop}</span>
+                            <Icon name="shopping" className="w-5 h-5" />
+                            <span className="text-[9px] font-black uppercase tracking-widest">{T.shopTab}</span>
                         </button>
                         <button onClick={() => setView('records')} className={`flex flex-col items-center gap-1 transition-all ${view === 'records' ? 'text-yellow-600 scale-110' : 'text-slate-300'}`}>
-                            <Icon name="records" />
-                            <span className="text-[10px] font-black uppercase tracking-tighter">{T.records}</span>
+                            <Icon name="records" className="w-5 h-5" />
+                            <span className="text-[9px] font-black uppercase tracking-widest">{T.recordsTab}</span>
                         </button>
                     </nav>
+
+                    {/* Cart Modal */}
+                    {showCart && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-end justify-center">
+                            <div className="bg-white w-full max-w-xl rounded-t-[3rem] overflow-hidden flex flex-col max-h-[95vh] shadow-2xl animate-in slide-in-from-bottom duration-300">
+                                <div className="p-6 border-b flex justify-between items-center bg-slate-50">
+                                    <h3 className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-400">{T.cartTitle}</h3>
+                                    <button onClick={() => setShowCart(false)} className="bg-slate-200 hover:bg-slate-300 p-2 rounded-full transition-colors"><Icon name="close" className="w-5 h-5" /></button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
+                                    {cart.map(item => (
+                                        <div key={item.id} className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                                            <div className="flex-1 min-w-0 pr-4">
+                                                <p className="font-black text-[11px] truncate uppercase leading-tight">{item.label}</p>
+                                                <p className="text-[10px] font-bold text-slate-400 mt-1">₹{item.rate.toFixed(2)} / pc</p>
+                                            </div>
+                                            <div className="flex items-center gap-4 bg-white p-1 rounded-xl shadow-sm border border-slate-100">
+                                                <button onClick={() => updateQty(item.id, -1)} className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors"><Icon name="minus" className="w-3 h-3" /></button>
+                                                <span className="font-black text-xs w-4 text-center">{item.qty}</span>
+                                                <button onClick={() => updateQty(item.id, 1)} className="w-7 h-7 flex items-center justify-center text-slate-900 hover:text-green-600 transition-colors"><Icon name="plus" className="w-3 h-3" /></button>
+                                            </div>
+                                            <p className="font-black text-xs w-16 text-right ml-4 shrink-0">₹{(item.rate*item.qty).toFixed(2)}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="p-8 bg-slate-900 text-white space-y-6 safe-area-bottom">
+                                    <div className="flex justify-between items-end">
+                                        <span className="text-[10px] font-black opacity-40 uppercase tracking-[0.3em]">{T.total}</span>
+                                        <span className="text-3xl font-black text-yellow-400 leading-none">₹{grandTotal.toFixed(2)}</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black uppercase tracking-widest text-white/30 ml-1">{T.nameLabel}</label>
+                                        <input className="w-full bg-white/10 p-5 rounded-2xl font-black outline-none border border-white/5 focus:border-yellow-400/50 transition-all text-sm placeholder:text-white/10" placeholder="..." value={customerName} onChange={e=>setCustomerName(e.target.value)} />
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <button onClick={generatePDF} disabled={cart.length === 0} 
+                                            className="w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-2xl font-black flex items-center justify-center gap-3 text-sm transition-all border border-white/10">
+                                            <Icon name="file" className="w-4 h-4" /> {T.downloadPdf}
+                                        </button>
+                                        <button onClick={handleCheckout} disabled={isCheckingOut || cart.length === 0} 
+                                            className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-50 active:scale-95 transition-all p-5 rounded-2xl font-black text-slate-900 flex items-center justify-center gap-3 text-sm shadow-xl shadow-green-900/20">
+                                            <Icon name="send" className="w-4 h-4" /> {T.checkout}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         }
