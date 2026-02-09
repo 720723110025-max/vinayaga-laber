@@ -26,29 +26,49 @@
 <body class="bg-slate-50">
     <div id="root"></div>
 
-    <!-- Firebase SDKs -->
+    <!-- Combined Firebase and React Script -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 
-        window.fb = { initializeApp, getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, getAuth, signInAnonymously, onAuthStateChanged };
+        // Global Firebase Configuration (provided by environment or default)
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "",
+            authDomain: "default-app-id.firebaseapp.com",
+            projectId: "default-app-id",
+            storageBucket: "default-app-id.appspot.com",
+            messagingSenderId: "",
+            appId: ""
+        };
+
+        // Initialize Firebase immediately
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Export to window for Babel/React usage
+        window.fb = { app, auth, db, collection, doc, addDoc, onSnapshot, query, orderBy, serverTimestamp, signInAnonymously, onAuthStateChanged, signInWithCustomToken };
+
+        // Signal that Firebase is ready
+        window.dispatchEvent(new Event('firebase-ready'));
     </script>
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // Custom SVG Icons to avoid Lucide external library conflicts
         const Icon = ({ name, size = 24, className = "" }) => {
             const icons = {
-                Package: <path d="M16.5 9.4 7.55 4.24a2 2 0 0 0-2 0L3.42 5.51a1.49 1.49 0 0 0 .23 2.65L12 13l8.35-4.84a1.49 1.49 0 0 0 .23-2.65L18.45 4.24a2 2 0 0 0-2 0L16.5 9.4Z"/><path d="m3.29 14.29 7.4 4.29a2 2 0 0 0 2 0l7.4-4.29a1.5 1.5 0 0 0 0-2.6l-7.4-4.29a2 2 0 0 0-2 0l-7.4 4.29a1.5 1.5 0 0 0 0 2.6Z"/><path d="M12 22v-9"/>,
+                Package: <><path d="M16.5 9.4 7.55 4.24a2 2 0 0 0-2 0L3.42 5.51a1.49 1.49 0 0 0 .23 2.65L12 13l8.35-4.84a1.49 1.49 0 0 0 .23-2.65L18.45 4.24a2 2 0 0 0-2 0L16.5 9.4Z"/><path d="m3.29 14.29 7.4 4.29a2 2 0 0 0 2 0l7.4-4.29a1.5 1.5 0 0 0 0-2.6l-7.4-4.29a2 2 0 0 0-2 0l-7.4 4.29a1.5 1.5 0 0 0 0 2.6Z"/><path d="M12 22v-9"/></>,
                 ChevronDown: <path d="m6 9 6 6 6-6"/>,
-                ClipboardList: <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>,
-                X: <path d="M18 6 6 18"/><path d="M6 6 18 18"/>,
-                Plus: <path d="M12 5v14"/><path d="M5 12h14"/>,
-                History: <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>,
-                Lock: <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>,
-                Send: <path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>
+                ClipboardList: <><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></>,
+                X: <><path d="M18 6 6 18"/><path d="M6 6 18 18"/></>,
+                Plus: <><path d="M12 5v14"/><path d="M5 12h14"/></>,
+                History: <><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></>,
+                Lock: <><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>,
+                Send: <><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></>,
+                Droplet: <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5s-3 3.5-3 5.5a7 7 0 0 0 7 7z"/>,
+                Layers: <><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.1 6.27a2 2 0 0 0 0 3.66l9.07 4.09a2 2 0 0 0 1.66 0l9.07-4.09a2 2 0 0 0 0-3.66z"/><path d="m2.1 14.07 9.07 4.09a2 2 0 0 0 1.66 0l9.07-4.09"/><path d="m2.1 19.07 9.07 4.09a2 2 0 0 0 1.66 0l9.07-4.09"/></>
             };
             return (
                 <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -99,8 +119,9 @@
                 subtitle: "Blessings of Sri Pachaiamman",
                 pvcPipes: "PVC Bend",
                 jetFootvale: "Jet Footvale",
+                longCoupler: "Long Coupler",
                 pipeSize: "Size",
-                weight: "Type",
+                weight: "Type / Weight",
                 add: "Add to Bill",
                 grandTotal: "Grand Total",
                 customerName: "Customer Name",
@@ -113,8 +134,9 @@
                 subtitle: "ஸ்ரீ பச்சையம்மன் துணை",
                 pvcPipes: "PVC பெண்ட்",
                 jetFootvale: "ஜெட் புட்வால்வ்",
+                longCoupler: "லாங் கப்ளர்",
                 pipeSize: "அளவு",
-                weight: "வகை",
+                weight: "வகை / எடை",
                 add: "பில்லில் சேர்க்க",
                 grandTotal: "மொத்த தொகை",
                 customerName: "வாடிக்கையாளர் பெயர்",
@@ -125,7 +147,7 @@
         };
 
         function App() {
-            const [lang, setLang] = useState('en');
+            const [lang, setLang] = useState('ta');
             const [user, setUser] = useState(null);
             const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
             const [loginPassword, setLoginPassword] = useState('');
@@ -135,30 +157,52 @@
             const [customerName, setCustomerName] = useState('');
             const [isProcessing, setIsProcessing] = useState(false);
 
-            const T = UI_TEXT[lang];
-
             const [selectedPipeSize, setSelectedPipeSize] = useState(PRODUCT_DATA.pipes[0].size);
             const [selectedPipeWeight, setSelectedPipeWeight] = useState(Object.keys(PRODUCT_DATA.pipes[0].rates)[0]);
+            const [selectedJetName, setSelectedJetName] = useState(PRODUCT_DATA.jetFootvale[0].name);
+            const [selectedCouplerSize, setSelectedCouplerSize] = useState(PRODUCT_DATA.longCoupler[0].size);
+            const [selectedCouplerWeight, setSelectedCouplerWeight] = useState(Object.keys(PRODUCT_DATA.longCoupler[0].rates)[0]);
+
+            const T = UI_TEXT[lang];
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'sri-vinayaga-laber-works-v1';
 
             useEffect(() => {
-                if (!window.fb) return;
-                const { getAuth, signInAnonymously, onAuthStateChanged } = window.fb;
-                const auth = getAuth();
-                signInAnonymously(auth).catch(console.error);
-                return onAuthStateChanged(auth, setUser);
+                const initAuth = async () => {
+                    const { auth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } = window.fb;
+                    
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    onAuthStateChanged(auth, setUser);
+                };
+                
+                // If window.fb is not yet available, wait for it
+                if (window.fb) {
+                    initAuth();
+                } else {
+                    const checkFb = () => {
+                        if (window.fb) initAuth();
+                        else window.addEventListener('firebase-ready', initAuth, { once: true });
+                    };
+                    checkFb();
+                }
             }, []);
 
             useEffect(() => {
                 if (!window.fb || !user || !isAdminLoggedIn || view !== 'admin') return;
-                const { getFirestore, collection, query, orderBy, onSnapshot } = window.fb;
-                const db = getFirestore();
-                const q = query(collection(db, 'artifacts', 'sri-vinayaga-laber-works-v1', 'public', 'data', 'orders'), orderBy('createdAt', 'desc'));
-                return onSnapshot(q, (snapshot) => {
+                const { db, collection, query, orderBy, onSnapshot } = window.fb;
+                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), orderBy('createdAt', 'desc'));
+                const unsubscribe = onSnapshot(q, (snapshot) => {
                     setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-                });
+                }, (err) => console.error("Firestore Error", err));
+                return () => unsubscribe();
             }, [user, isAdminLoggedIn, view]);
 
             const currentPipe = PRODUCT_DATA.pipes.find(p => p.size === selectedPipeSize);
+            const currentJet = PRODUCT_DATA.jetFootvale.find(j => j.name === selectedJetName);
+            const currentCoupler = PRODUCT_DATA.longCoupler.find(c => c.size === selectedCouplerSize);
 
             const addToCart = (product) => {
                 setCart(prev => {
@@ -169,26 +213,27 @@
             };
 
             const handleCheckout = async () => {
-                if (!customerName) { alert("Enter Name"); return; }
+                if (!customerName) { alert(lang === 'ta' ? "பெயரை உள்ளிடவும்" : "Enter Name"); return; }
+                if (cart.length === 0) return;
+                if (!user) return;
                 setIsProcessing(true);
                 const total = cart.reduce((sum, item) => sum + (item.rate * item.qty), 0);
                 try {
-                    const { getFirestore, collection, addDoc, serverTimestamp } = window.fb;
-                    const db = getFirestore();
-                    await addDoc(collection(db, 'artifacts', 'sri-vinayaga-laber-works-v1', 'public', 'data', 'orders'), { 
+                    const { db, collection, addDoc, serverTimestamp } = window.fb;
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), { 
                         customerName, items: cart, total, createdAt: serverTimestamp(), userId: user.uid 
                     });
                     const msg = `*SRI VINAYAGA LABER WORKS*\n*CUSTOMER:* ${customerName}\n*TOTAL:* ₹${total}`;
                     window.open(`https://wa.me/918643861100?text=${encodeURIComponent(msg)}`);
-                    setCart([]); setCustomerName(''); alert("Bill Sent!");
+                    setCart([]); setCustomerName(''); alert(lang === 'ta' ? "பில் அனுப்பப்பட்டது!" : "Bill Sent!");
                 } catch (e) { alert(e.message); } finally { setIsProcessing(false); }
             };
 
             return (
-                <div className="min-h-screen pb-24">
-                    <header className="bg-yellow-400 p-4 sticky top-0 z-50 shadow-sm text-center">
-                        <h2 className="text-[10px] font-black uppercase tracking-widest opacity-70">{T.subtitle}</h2>
-                        <h1 className="text-lg font-black">{T.title}</h1>
+                <div className="min-h-screen pb-32 bg-slate-50">
+                    <header className="bg-yellow-400 p-4 sticky top-0 z-50 shadow-md text-center">
+                        <h2 className="text-[10px] font-black uppercase tracking-widest opacity-70 leading-tight">{T.subtitle}</h2>
+                        <h1 className="text-xl font-black">{T.title}</h1>
                     </header>
 
                     <main className="max-w-xl mx-auto p-4 space-y-6">
@@ -196,44 +241,140 @@
                             <>
                                 <div className="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <Icon name="Package" className="text-yellow-600" />
-                                        <h3 className="font-black uppercase text-sm">{T.pvcPipes}</h3>
+                                        <div className="bg-yellow-100 p-2 rounded-xl text-yellow-600">
+                                            <Icon name="Package" size={20} />
+                                        </div>
+                                        <h3 className="font-black uppercase text-sm tracking-tight">{T.pvcPipes}</h3>
                                     </div>
-                                    <div className="grid grid-cols-1 gap-4">
+                                    <div className="grid grid-cols-2 gap-3">
                                         <div className="relative">
-                                            <label className="text-[10px] font-bold text-slate-400 absolute left-3 top-2 uppercase">{T.pipeSize}</label>
+                                            <label className="text-[9px] font-black text-slate-400 absolute left-3 top-2 uppercase">{T.pipeSize}</label>
                                             <select 
-                                                className="w-full bg-slate-50 rounded-2xl pt-7 pb-3 px-3 font-bold appearance-none" 
+                                                className="w-full bg-slate-100 rounded-2xl pt-7 pb-3 px-3 font-bold text-sm appearance-none" 
                                                 value={selectedPipeSize} 
-                                                onChange={e => setSelectedPipeSize(parseInt(e.target.value))}
+                                                onChange={e => {
+                                                    const size = parseInt(e.target.value);
+                                                    setSelectedPipeSize(size);
+                                                    const pipe = PRODUCT_DATA.pipes.find(p => p.size === size);
+                                                    setSelectedPipeWeight(Object.keys(pipe.rates)[0]);
+                                                }}
                                             >
                                                 {PRODUCT_DATA.pipes.map(p => <option key={p.size} value={p.size}>{p.size}mm</option>)}
                                             </select>
-                                            <Icon name="ChevronDown" size={16} className="absolute right-3 top-1/2 mt-1 text-slate-400" />
+                                            <Icon name="ChevronDown" size={14} className="absolute right-3 top-1/2 mt-1 text-slate-400" />
                                         </div>
-                                        <button 
-                                            onClick={() => addToCart({
-                                                id: `p-${selectedPipeSize}`, 
-                                                label: `${selectedPipeSize}mm Bend`, 
-                                                rate: currentPipe.rates[Object.keys(currentPipe.rates)[0]]
-                                            })} 
-                                            className="bg-yellow-400 p-4 rounded-2xl font-black text-lg active:scale-95 transition-transform"
-                                        >
-                                            {T.add}
-                                        </button>
+                                        <div className="relative">
+                                            <label className="text-[9px] font-black text-slate-400 absolute left-3 top-2 uppercase">{T.weight}</label>
+                                            <select 
+                                                className="w-full bg-slate-100 rounded-2xl pt-7 pb-3 px-3 font-bold text-sm appearance-none" 
+                                                value={selectedPipeWeight} 
+                                                onChange={e => setSelectedPipeWeight(e.target.value)}
+                                            >
+                                                {Object.keys(currentPipe.rates).map(w => <option key={w} value={w}>{w}</option>)}
+                                            </select>
+                                            <Icon name="ChevronDown" size={14} className="absolute right-3 top-1/2 mt-1 text-slate-400" />
+                                        </div>
                                     </div>
+                                    <button 
+                                        onClick={() => addToCart({
+                                            id: `p-${selectedPipeSize}-${selectedPipeWeight}`, 
+                                            label: `${selectedPipeSize}mm Bend (${selectedPipeWeight})`, 
+                                            rate: currentPipe.rates[selectedPipeWeight]
+                                        })} 
+                                        className="w-full bg-yellow-400 p-4 rounded-2xl font-black text-sm active:scale-95 transition-transform"
+                                    >
+                                        + {T.add} (₹{currentPipe.rates[selectedPipeWeight]})
+                                    </button>
+                                </div>
+
+                                <div className="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="bg-blue-100 p-2 rounded-xl text-blue-600">
+                                            <Icon name="Droplet" size={20} />
+                                        </div>
+                                        <h3 className="font-black uppercase text-sm tracking-tight">{T.jetFootvale}</h3>
+                                    </div>
+                                    <div className="relative">
+                                        <label className="text-[9px] font-black text-slate-400 absolute left-3 top-2 uppercase">Selection</label>
+                                        <select 
+                                            className="w-full bg-slate-100 rounded-2xl pt-7 pb-3 px-3 font-bold text-sm appearance-none" 
+                                            value={selectedJetName} 
+                                            onChange={e => setSelectedJetName(e.target.value)}
+                                        >
+                                            {PRODUCT_DATA.jetFootvale.map(j => <option key={j.name} value={j.name}>{j.name}</option>)}
+                                        </select>
+                                        <Icon name="ChevronDown" size={14} className="absolute right-3 top-1/2 mt-1 text-slate-400" />
+                                    </div>
+                                    <button 
+                                        onClick={() => addToCart({
+                                            id: `j-${selectedJetName}`, 
+                                            label: `Jet Footvale ${selectedJetName}`, 
+                                            rate: currentJet.rate
+                                        })} 
+                                        className="w-full bg-blue-500 text-white p-4 rounded-2xl font-black text-sm active:scale-95 transition-transform"
+                                    >
+                                        + {T.add} (₹{currentJet.rate})
+                                    </button>
+                                </div>
+
+                                <div className="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="bg-purple-100 p-2 rounded-xl text-purple-600">
+                                            <Icon name="Layers" size={20} />
+                                        </div>
+                                        <h3 className="font-black uppercase text-sm tracking-tight">{T.longCoupler}</h3>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="relative">
+                                            <label className="text-[9px] font-black text-slate-400 absolute left-3 top-2 uppercase">{T.pipeSize}</label>
+                                            <select 
+                                                className="w-full bg-slate-100 rounded-2xl pt-7 pb-3 px-3 font-bold text-sm appearance-none" 
+                                                value={selectedCouplerSize} 
+                                                onChange={e => {
+                                                    const size = parseInt(e.target.value);
+                                                    setSelectedCouplerSize(size);
+                                                    const coupler = PRODUCT_DATA.longCoupler.find(c => c.size === size);
+                                                    setSelectedCouplerWeight(Object.keys(coupler.rates)[0]);
+                                                }}
+                                            >
+                                                {PRODUCT_DATA.longCoupler.map(c => <option key={c.size} value={c.size}>{c.size}mm</option>)}
+                                            </select>
+                                            <Icon name="ChevronDown" size={14} className="absolute right-3 top-1/2 mt-1 text-slate-400" />
+                                        </div>
+                                        <div className="relative">
+                                            <label className="text-[9px] font-black text-slate-400 absolute left-3 top-2 uppercase">{T.weight}</label>
+                                            <select 
+                                                className="w-full bg-slate-100 rounded-2xl pt-7 pb-3 px-3 font-bold text-sm appearance-none" 
+                                                value={selectedCouplerWeight} 
+                                                onChange={e => setSelectedCouplerWeight(e.target.value)}
+                                            >
+                                                {Object.keys(currentCoupler.rates).map(w => <option key={w} value={w}>{w}</option>)}
+                                            </select>
+                                            <Icon name="ChevronDown" size={14} className="absolute right-3 top-1/2 mt-1 text-slate-400" />
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => addToCart({
+                                            id: `c-${selectedCouplerSize}-${selectedCouplerWeight}`, 
+                                            label: `${selectedCouplerSize}mm Long Coupler (${selectedCouplerWeight})`, 
+                                            rate: currentCoupler.rates[selectedCouplerWeight]
+                                        })} 
+                                        className="w-full bg-purple-500 text-white p-4 rounded-2xl font-black text-sm active:scale-95 transition-transform"
+                                    >
+                                        + {T.add} (₹{currentCoupler.rates[selectedCouplerWeight]})
+                                    </button>
                                 </div>
 
                                 {cart.length > 0 && (
-                                    <div className="bg-slate-900 text-white p-6 rounded-[2.5rem] shadow-xl space-y-4">
+                                    <div className="fixed bottom-24 left-4 right-4 bg-slate-900 text-white p-6 rounded-[2.5rem] shadow-2xl space-y-4 z-40">
                                         <div className="flex justify-between items-center border-b border-white/10 pb-4">
-                                            <h3 className="font-black uppercase tracking-widest text-xs opacity-50">Current Items</h3>
-                                            <button onClick={() => setCart([])}><Icon name="X" size={18} /></button>
+                                            <h3 className="font-black uppercase tracking-widest text-[10px] opacity-50">Current Bill</h3>
+                                            <button onClick={() => setCart([])} className="bg-white/10 p-2 rounded-full"><Icon name="X" size={16} /></button>
                                         </div>
-                                        <div className="space-y-3">
+                                        <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
                                             {cart.map(item => (
-                                                <div key={item.id} className="flex justify-between items-center">
-                                                    <span className="font-bold">{item.qty} x {item.label}</span>
+                                                <div key={item.id} className="flex justify-between items-center text-sm">
+                                                    <span className="font-bold opacity-80">{item.qty} × {item.label}</span>
                                                     <span className="font-black">₹{item.rate * item.qty}</span>
                                                 </div>
                                             ))}
@@ -242,16 +383,17 @@
                                             <span className="text-[10px] font-bold opacity-50 uppercase">{T.grandTotal}</span>
                                             <span className="text-3xl font-black">₹{cart.reduce((s,i)=>s+(i.rate*i.qty),0)}</span>
                                         </div>
-                                        <div className="space-y-3 pt-4">
+                                        <div className="space-y-3 pt-2">
                                             <input 
-                                                className="w-full p-4 rounded-2xl bg-white/10 border border-white/20 text-white placeholder:text-white/30 font-bold outline-none" 
+                                                className="w-full p-4 rounded-2xl bg-white/10 border border-white/20 text-white placeholder:text-white/30 font-bold outline-none focus:bg-white/20" 
                                                 placeholder={T.customerName} 
                                                 value={customerName} 
                                                 onChange={e=>setCustomerName(e.target.value)} 
                                             />
                                             <button 
                                                 onClick={handleCheckout} 
-                                                className="w-full bg-green-500 p-5 rounded-2xl font-black text-lg flex items-center justify-center gap-2"
+                                                disabled={isProcessing}
+                                                className="w-full bg-green-500 hover:bg-green-400 p-5 rounded-2xl font-black text-lg flex items-center justify-center gap-2 disabled:opacity-50"
                                             >
                                                 <Icon name="Send" size={20} /> {T.generateBill}
                                             </button>
@@ -262,37 +404,57 @@
                         ) : (
                             <div className="space-y-4">
                                 {!isAdminLoggedIn ? (
-                                    <div className="bg-white p-10 rounded-3xl border shadow-sm text-center space-y-6">
-                                        <Icon name="Lock" size={48} className="mx-auto text-slate-300" />
+                                    <div className="bg-white p-10 rounded-3xl border shadow-sm text-center space-y-6 mt-10">
+                                        <div className="bg-slate-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto text-slate-400">
+                                            <Icon name="Lock" size={40} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <h3 className="font-black text-xl">Owner Access</h3>
+                                            <p className="text-sm text-slate-400">Enter your secure password to view records</p>
+                                        </div>
                                         <input 
                                             type="password" 
-                                            className="w-full p-4 rounded-xl bg-slate-50 border font-bold text-center" 
-                                            placeholder="Owner Password" 
+                                            className="w-full p-5 rounded-2xl bg-slate-50 border-2 border-slate-100 font-bold text-center focus:border-yellow-400 transition-all" 
+                                            placeholder="••••••••" 
                                             value={loginPassword} 
                                             onChange={e => setLoginPassword(e.target.value)} 
                                         />
                                         <button 
-                                            onClick={() => loginPassword === "Owner@123" ? setIsAdminLoggedIn(true) : alert("Wrong")} 
-                                            className="w-full bg-slate-900 text-white p-4 rounded-xl font-black"
+                                            onClick={() => loginPassword === "Owner@123" ? setIsAdminLoggedIn(true) : alert("Incorrect Password")} 
+                                            className="w-full bg-slate-900 text-white p-5 rounded-2xl font-black text-lg shadow-lg"
                                         >
                                             Login
                                         </button>
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
-                                        <div className="flex justify-between items-center">
-                                            <h3 className="font-black flex items-center gap-2"><Icon name="History" /> Sales</h3>
-                                            <button onClick={() => setIsAdminLoggedIn(false)} className="text-red-500 font-bold text-xs uppercase">Logout</button>
+                                        <div className="flex justify-between items-center bg-white p-4 rounded-2xl border shadow-sm">
+                                            <h3 className="font-black flex items-center gap-2"><Icon name="History" className="text-yellow-600" /> Recent Sales</h3>
+                                            <button onClick={() => setIsAdminLoggedIn(false)} className="text-red-500 font-bold text-xs uppercase bg-red-50 px-3 py-2 rounded-lg">Logout</button>
                                         </div>
-                                        {orders.map(o => (
-                                            <div key={o.id} className="bg-white p-5 rounded-2xl border shadow-sm">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <span className="font-black uppercase text-sm">{o.customerName}</span>
-                                                    <span className="font-black text-green-600">₹{o.total}</span>
+                                        {orders.length === 0 ? (
+                                            <div className="text-center p-10 opacity-30 font-black">NO RECORDS FOUND</div>
+                                        ) : (
+                                            orders.map(o => (
+                                                <div key={o.id} className="bg-white p-5 rounded-2xl border shadow-sm">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-black uppercase text-sm">{o.customerName}</span>
+                                                            <span className="text-[10px] text-slate-400 font-bold">{o.createdAt?.toDate().toLocaleString()}</span>
+                                                        </div>
+                                                        <span className="font-black text-green-600 text-lg">₹{o.total}</span>
+                                                    </div>
+                                                    <div className="mt-3 pt-3 border-t border-slate-50 space-y-1">
+                                                        {o.items?.map((item, idx) => (
+                                                            <div key={idx} className="text-[10px] font-bold text-slate-500 flex justify-between">
+                                                                <span>{item.qty} × {item.label}</span>
+                                                                <span>₹{item.rate * item.qty}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                                <div className="text-[10px] text-slate-400 font-bold">{o.createdAt?.toDate().toLocaleString()}</div>
-                                            </div>
-                                        ))}
+                                            ))
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -300,13 +462,13 @@
                     </main>
 
                     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t h-20 flex justify-around items-center px-6 shadow-2xl z-50">
-                        <button onClick={() => setView('shop')} className={`flex flex-col items-center gap-1 ${view === 'shop' ? 'text-yellow-600' : 'text-slate-300'}`}>
-                            <Icon name="Package" size={24} />
-                            <span className="text-[10px] font-black uppercase">{T.shop}</span>
+                        <button onClick={() => setView('shop')} className={`flex flex-col items-center gap-1 ${view === 'shop' ? 'text-yellow-600 scale-110' : 'text-slate-300'}`}>
+                            <Icon name="Package" size={26} />
+                            <span className="text-[10px] font-black uppercase tracking-tighter">{T.shop}</span>
                         </button>
-                        <button onClick={() => setView('admin')} className={`flex flex-col items-center gap-1 ${view === 'admin' ? 'text-yellow-600' : 'text-slate-300'}`}>
-                            <Icon name="ClipboardList" size={24} />
-                            <span className="text-[10px] font-black uppercase">{T.owner}</span>
+                        <button onClick={() => setView('admin')} className={`flex flex-col items-center gap-1 ${view === 'admin' ? 'text-yellow-600 scale-110' : 'text-slate-300'}`}>
+                            <Icon name="ClipboardList" size={26} />
+                            <span className="text-[10px] font-black uppercase tracking-tighter">{T.owner}</span>
                         </button>
                     </nav>
                 </div>
