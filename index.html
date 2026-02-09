@@ -8,12 +8,11 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- PDF Generation Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
-        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         select { 
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); 
@@ -21,39 +20,15 @@
             background-position: right 0.75rem center; 
             background-size: 1rem; 
             -webkit-appearance: none;
-            -moz-appearance: none;
             appearance: none;
         }
-        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-        import { getFirestore, collection, doc, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "",
-            authDomain: "default-app-id.firebaseapp.com",
-            projectId: "default-app-id",
-            storageBucket: "default-app-id.appspot.com",
-            messagingSenderId: "",
-            appId: ""
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        window.fb = { app, auth, db, collection, doc, addDoc, onSnapshot, query, orderBy, serverTimestamp, signInAnonymously, onAuthStateChanged, signInWithCustomToken };
-        window.dispatchEvent(new Event('firebase-ready'));
-    </script>
-
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect } = React;
 
         const PRODUCT_DATA = {
             pipes: [
@@ -85,80 +60,48 @@
                 { size: 160, rates: { "4 Kgs": 11.50, "6 Kgs": 12.65 } },
             ],
             jetFootvale: [
-                { name: "50*6", rate: 30.00 },
-                { name: "50*15", rate: 35.00 },
-                { name: "50*32", rate: 45.00 },
-                { name: "50*40", rate: 55.00 },
-                { name: "63*6", rate: 45.00 },
-                { name: "63*15", rate: 55.00 },
+                { name: "50*6", rate: 30.00 }, { name: "50*15", rate: 35.00 },
+                { name: "50*32", rate: 45.00 }, { name: "50*40", rate: 55.00 },
+                { name: "63*6", rate: 45.00 }, { name: "63*15", rate: 55.00 },
             ],
         };
 
         const TRANSLATIONS = {
             en: {
-                title: "Sri Vinayaga Laber Works",
-                subtitle: "Sri Pachaiamman Thunai",
-                address: "Sinthan Nagar, Krishnampalayam, Erode - 03",
-                contact: "Cell: 9095786363, 8015767107",
-                bend: "BEND",
-                coupler: "COUPLER",
-                jet: "JET FOOTVALE",
-                add: "Add to Bill",
-                total: "Total",
-                checkout: "Send via WhatsApp",
-                downloadPdf: "Download PDF Bill",
-                nameLabel: "Customer/Shop Name",
-                shopTab: "Shop",
-                recordsTab: "History",
-                cartTitle: "Current Order",
-                viewCart: "Check Bill",
-                empty: "No items added",
-                adminLogin: "Admin Login",
-                recentBills: "Recent Orders",
-                logout: "Logout",
-                weight: "Weight/Type",
-                size: "Size (mm)",
+                title: "SRI VINAYAGA LABER WORKS",
+                subtitle: "SRI PACHAIAMMAN THUNAI",
+                address: "SINTHAN NAGAR, KRISHNAMPALAYAM, ERODE - 03",
+                contacts: "CELL: 9095786363, 8015767107",
+                bend: "BEND", coupler: "COUPLER", jet: "JET FOOTVALE",
+                add: "Add to Bill", total: "Total Amount", whatsapp: "Send to WhatsApp",
+                pdf: "Download PDF", name: "Customer Name",
+                viewBill: "Generate Bill", empty: "Cart Empty",
+                size: "Size (mm)", type: "Type"
             },
             ta: {
                 title: "ஸ்ரீ விநாயகா லேபர் ஒர்க்ஸ்",
                 subtitle: "ஸ்ரீ பச்சையம்மன் துணை",
                 address: "சிந்தன் நகர், கிருஷ்ணம்பாளையம், ஈரோடு - 03",
-                contact: "செல்: 9095786363, 8015767107",
-                bend: "பெண்ட் (BEND)",
-                coupler: "கப்ளர் (COUPLER)",
-                jet: "ஜெட் (JET FOOTVALE)",
-                add: "சேர்க்க",
-                total: "மொத்தம்",
-                checkout: "WhatsApp அனுப்ப",
-                downloadPdf: "PDF பில் பதிவிறக்க",
-                nameLabel: "பெயர் / கடை",
-                shopTab: "விற்பனை",
-                recordsTab: "பதிவுகள்",
-                cartTitle: "பட்டியல்",
-                viewCart: "பில் பார்க்க",
-                empty: "பட்டியல் காலியாக உள்ளது",
-                adminLogin: "அட்மின் உள்நுழைவு",
-                recentBills: "சமீபத்திய பில்கள்",
-                logout: "வெளியேறு",
-                weight: "எடை/வகை",
-                size: "அளவு (மிமீ)",
+                contacts: "செல்: 9095786363, 8015767107",
+                bend: "பெண்ட் (BEND)", coupler: "கப்ளர் (COUPLER)", jet: "ஜெட் (JET)",
+                add: "சேர்க்க", total: "மொத்த தொகை", whatsapp: "வாட்ஸ்அப் அனுப்ப",
+                pdf: "பில் பதிவிறக்கம்", name: "வாடிக்கையாளர் பெயர்",
+                viewBill: "பில் உருவாக்கு", empty: "பட்டியல் காலியாக உள்ளது",
+                size: "அளவு", type: "வகை"
             }
         };
 
-        const Icon = ({ name, className = "" }) => {
+        const Icon = ({ name, className }) => {
             const icons = {
-                shopping: (<g><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></g>),
-                records: (<g><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h10"/><path d="M7 12h10"/><path d="M7 17h10"/></g>),
+                whatsapp: <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-11.7 8.38 8.38 0 0 1 3.8.9L21 3zM17 15.5c-.2-.4-.8-.6-1.6-.9-.8-.4-1.1-.6-1.3-.8-.2-.2-.3-.5-.1-.8s.6-.8.8-1c.2-.2.3-.5.1-.8-.2-.3-.8-1.9-1.1-2.5-.3-.6-.6-.5-.8-.5H13c-.2 0-.6.1-.9.5-.3.4-1.1 1.1-1.1 2.6s1.1 3 1.2 3.2c.1.2 2.2 3.4 5.4 4.7.7.3 1.3.5 1.8.7.8.2 1.5.2 2 .1.6-.1 1.7-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.1-.3-.2-.5-.3z" />,
                 plus: <path d="M12 5v14M5 12h14" />,
-                minus: <path d="M5 12h14" />,
-                send: <path d="m22 2-7 20-4-9-9-4ZM22 2 11 13" />,
                 close: <path d="M18 6 6 18M6 6l12 12" />,
-                globe: (<g><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20"/><path d="M12 2a14.5 14.5 0 0 1 0 20"/><path d="M2 12h20"/></g>),
-                cart: (<g><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></g>),
-                file: (<g><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></g>)
+                file: <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />,
+                trash: <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />,
+                check: <path d="M20 6 9 17l-5-5" />
             };
             return (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     {icons[name]}
                 </svg>
             );
@@ -166,361 +109,255 @@
 
         function App() {
             const [lang, setLang] = useState('ta');
-            const [view, setView] = useState('shop');
-            const [showCart, setShowCart] = useState(false);
-            const [user, setUser] = useState(null);
             const [cart, setCart] = useState([]);
             const [customerName, setCustomerName] = useState('');
-            const [isCheckingOut, setIsCheckingOut] = useState(false);
-            const [isAdmin, setIsAdmin] = useState(false);
-            const [pass, setPass] = useState('');
-            const [orders, setOrders] = useState([]);
-
-            const [pSize, setPSize] = useState(PRODUCT_DATA.pipes[0].size);
-            const [pWeight, setPWeight] = useState(Object.keys(PRODUCT_DATA.pipes[0].rates)[0]);
-            const [cSize, setCSize] = useState(PRODUCT_DATA.coupler[0].size);
-            const [cWeight, setCWeight] = useState(Object.keys(PRODUCT_DATA.coupler[0].rates)[0]);
-            const [jName, setJName] = useState(PRODUCT_DATA.jetFootvale[0].name);
+            const [showModal, setShowModal] = useState(false);
+            const [isBillGenerated, setIsBillGenerated] = useState(false);
+            const [billNo, setBillNo] = useState(1001);
+            
+            const [pS, setPS] = useState(20); 
+            const [pW, setPW] = useState("15 Kgs");
+            const [cS, setCS] = useState(20); 
+            const [cW, setCW] = useState("15 Kgs");
+            const [jN, setJN] = useState(PRODUCT_DATA.jetFootvale[0].name);
 
             const T = TRANSLATIONS[lang];
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'v-laber-works-v1';
 
             useEffect(() => {
-                const init = async () => {
-                    if (!window.fb) return;
-                    const { auth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } = window.fb;
-                    try {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    } catch (e) {}
-                    const unsubscribe = onAuthStateChanged(auth, setUser);
-                    return unsubscribe;
-                };
-                let unsubscribe;
-                if (window.fb) { init().then(unsub => unsubscribe = unsub); }
-                else { window.addEventListener('firebase-ready', () => { init().then(unsub => unsubscribe = unsub); }); }
-                return () => unsubscribe && unsubscribe();
-            }, []);
+                const pipe = PRODUCT_DATA.pipes.find(p => p.size === pS);
+                if (pipe) {
+                    const availableRates = Object.keys(pipe.rates);
+                    if (!pipe.rates[pW]) setPW(availableRates[0]);
+                }
+            }, [pS]);
 
             useEffect(() => {
-                if (!user || !isAdmin || view !== 'records') return;
-                const { db, collection, query, orderBy, onSnapshot } = window.fb;
-                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), orderBy('createdAt', 'desc'));
-                const unsubscribe = onSnapshot(q, (s) => {
-                    setOrders(s.docs.map(d => ({id: d.id, ...d.data()})));
-                }, (e) => console.error(e));
-                return unsubscribe;
-            }, [user, isAdmin, view]);
+                const coupler = PRODUCT_DATA.coupler.find(p => p.size === cS);
+                if (coupler) {
+                    const availableRates = Object.keys(coupler.rates);
+                    if (!coupler.rates[cW]) setCW(availableRates[0]);
+                }
+            }, [cS]);
 
             const addToCart = (id, labelEn, labelTa, rate) => {
-                if (!rate) return;
-                setCart(curr => {
-                    const exists = curr.find(i => i.id === id);
-                    if (exists) return curr.map(i => i.id === id ? {...i, qty: i.qty + 1} : i);
-                    return [...curr, { id, labelEn, labelTa, rate, qty: 1 }];
+                if (rate === undefined || rate === null) return;
+                setCart(prev => {
+                    const exists = prev.find(i => i.id === id);
+                    if (exists) return prev.map(i => i.id === id ? {...i, qty: i.qty + 1} : i);
+                    return [...prev, { id, labelEn, labelTa, rate, qty: 1 }];
                 });
             };
 
-            const updateQty = (id, delta) => {
-                setCart(curr => curr.map(i => {
-                    if (i.id === id) {
-                        const newQty = Math.max(1, i.qty + delta);
-                        return {...i, qty: newQty};
-                    }
-                    return i;
-                }));
+            const removeFromCart = (id) => setCart(prev => prev.filter(i => i.id !== id));
+
+            const grandTotal = cart.reduce((a, b) => a + (b.rate * b.qty), 0);
+
+            const handleGenerateBillAction = () => {
+                if (!customerName.trim()) {
+                    alert(lang === 'ta' ? "வாடிக்கையாளர் பெயரை உள்ளிடவும்" : "Please enter customer name");
+                    return;
+                }
+                setIsBillGenerated(true);
             };
 
-            const grandTotal = useMemo(() => cart.reduce((acc, i) => acc + (i.rate * i.qty), 0), [cart]);
+            const sendWhatsApp = () => {
+                if (!isBillGenerated) return;
+                const date = new Date().toLocaleDateString();
+                const msg = `*${T.title}*\n_${T.address}_\n--------------------------\n*Bill No:* #${billNo}\n*Date:* ${date}\n*Customer:* ${customerName.trim()}\n--------------------------\n${cart.map(i => `• ${lang==='en'?i.labelEn:i.labelTa}\n  ${i.qty} x ₹${i.rate.toFixed(2)} = *₹${(i.rate*i.qty).toFixed(2)}*`).join('\n\n')}\n--------------------------\n*TOTAL: ₹${grandTotal.toFixed(2)}*\n--------------------------`;
+                
+                const whatsappUrl = `https://wa.me/918643861100?text=${encodeURIComponent(msg)}`;
+                window.open(whatsappUrl, '_blank');
+                
+                setBillNo(prev => prev + 1);
+                setCart([]); setCustomerName(''); setShowModal(false); setIsBillGenerated(false);
+            };
 
-            const generatePDF = () => {
-                if (!customerName.trim()) { alert(lang === 'ta' ? "பெயரை உள்ளிடவும்" : "Enter Name"); return; }
+            const downloadPDF = () => {
+                if (!isBillGenerated) return;
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
-
-                // Header - Using English for standard font support in jsPDF
-                const headerTitle = "SRI VINAYAGA LABER WORKS";
-                const headerSubtitle = "SRI PACHAIAMMAN THUNAI";
-                const headerAddress = "Sinthan Nagar, Krishnampalayam, Erode - 03";
-                const headerContact = "Cell: 9095786363, 8015767107";
-
-                doc.setFontSize(10);
-                doc.text(headerSubtitle, 105, 15, { align: 'center' });
-                doc.setFontSize(22);
-                doc.setFont('helvetica', 'bold');
-                doc.text(headerTitle, 105, 25, { align: 'center' });
                 
                 doc.setFontSize(10);
-                doc.setFont('helvetica', 'normal');
-                doc.text(headerAddress, 105, 32, { align: 'center' });
-                doc.text(headerContact, 105, 37, { align: 'center' });
-
-                // Divider
+                doc.text(T.subtitle, 105, 12, { align: 'center' });
+                doc.setFontSize(22);
+                doc.setFont("helvetica", "bold");
+                doc.text(T.title, 105, 22, { align: 'center' });
+                doc.setFontSize(9);
+                doc.setFont("helvetica", "normal");
+                doc.text(T.address, 105, 28, { align: 'center' });
+                doc.text(T.contacts, 105, 33, { align: 'center' });
                 doc.setLineWidth(0.5);
-                doc.line(20, 42, 190, 42);
+                doc.line(20, 36, 190, 36);
 
-                // Info Section
-                doc.setFontSize(12);
-                doc.text(`Customer: ${customerName}`, 20, 52);
-                doc.text(`Date: ${new Date().toLocaleDateString()}`, 190, 52, { align: 'right' });
-
-                // Table
-                // Note: Standard jsPDF fonts don't support Tamil, so we use labelEn for the PDF names
-                const tableRows = cart.map((item, index) => [
-                    index + 1,
-                    item.labelEn, 
-                    item.qty,
-                    item.rate.toFixed(2),
-                    (item.rate * item.qty).toFixed(2)
-                ]);
-
+                doc.setFontSize(11);
+                doc.text(`Bill No: #${billNo}`, 20, 45);
+                doc.text(`Date: ${new Date().toLocaleDateString()}`, 190, 45, { align: 'right' });
+                doc.setFontSize(13);
+                doc.setFont("helvetica", "bold");
+                doc.text(`Customer: ${customerName.trim()}`, 20, 55);
+                
                 doc.autoTable({
-                    startY: 60,
-                    head: [['S.No', 'Product Description', 'Qty', 'Rate', 'Amount']],
-                    body: tableRows,
-                    theme: 'striped',
-                    headStyles: { fillColor: [44, 62, 80] },
-                    styles: { fontSize: 10, cellPadding: 3 },
-                    foot: [['', '', '', 'Total', `Rs. ${grandTotal.toFixed(2)}`]],
-                    footStyles: { fillColor: [241, 196, 15], textColor: [44, 62, 80], fontStyle: 'bold' }
+                    startY: 62,
+                    head: [['Description', 'Qty', 'Rate', 'Total']],
+                    body: cart.map(i => [lang==='en'?i.labelEn:i.labelTa, i.qty, i.rate.toFixed(2), (i.rate*i.qty).toFixed(2)]),
+                    foot: [['', '', 'GRAND TOTAL', `Rs. ${grandTotal.toFixed(2)}`]],
+                    theme: 'grid',
+                    headStyles: { fillColor: [250, 204, 21], textColor: [0, 0, 0], fontStyle: 'bold' }
                 });
-
-                // Footer
-                const finalY = doc.lastAutoTable.finalY + 20;
-                doc.text('For SRI VINAYAGA LABER WORKS', 190, finalY, { align: 'right' });
-                doc.text('Authorised Signature', 190, finalY + 15, { align: 'right' });
-
-                doc.save(`Bill_${customerName}_${Date.now()}.pdf`);
+                
+                doc.save(`Bill_${billNo}.pdf`);
             };
 
-            const handleCheckout = async () => {
-                if (!customerName.trim()) { alert(lang === 'ta' ? "பெயரை உள்ளிடவும்" : "Enter Name"); return; }
-                setIsCheckingOut(true);
-                try {
-                    const { db, collection, addDoc, serverTimestamp } = window.fb;
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), {
-                        customerName, items: cart, total: grandTotal, createdAt: serverTimestamp(), userId: user?.uid
-                    });
-                    const header = lang === 'ta' ? '*ஸ்ரீ விநாயகா லேபர் ஒர்க்ஸ்*' : '*SRI VINAYAGA LABER WORKS*';
-                    const msg = `${header}\n*Customer:* ${customerName}\n*Total:* ₹${grandTotal.toFixed(2)}\n\n*Items:*\n${cart.map(i => {
-                        const name = lang === 'en' ? i.labelEn : i.labelTa;
-                        return `- ${name} (x${i.qty}): ₹${(i.rate*i.qty).toFixed(2)}`;
-                    }).join('\n')}`;
-                    window.open(`https://wa.me/918643861100?text=${encodeURIComponent(msg)}`);
-                    setCart([]); setCustomerName(''); setShowCart(false);
-                } catch (e) { alert("Error: " + e.message); }
-                setIsCheckingOut(false);
-            };
-
-            const currentBendRate = PRODUCT_DATA.pipes.find(p => p.size === pSize)?.rates[pWeight] || 0;
-            const currentCouplerRate = PRODUCT_DATA.coupler.find(p => p.size === cSize)?.rates[cWeight] || 0;
-            const currentJetRate = PRODUCT_DATA.jetFootvale.find(j => j.name === jName)?.rate || 0;
+            const foundPipe = PRODUCT_DATA.pipes.find(p => p.size === pS);
+            const currentPipeRate = foundPipe ? foundPipe.rates[pW] : 0;
+            
+            const foundCoupler = PRODUCT_DATA.coupler.find(p => p.size === cS);
+            const currentCouplerRate = foundCoupler ? foundCoupler.rates[cW] : 0;
+            
+            const foundJet = PRODUCT_DATA.jetFootvale.find(j => j.name === jN);
+            const currentJetRate = foundJet ? foundJet.rate : 0;
 
             return (
-                <div className="flex flex-col min-h-screen bg-slate-50">
-                    <header className="bg-yellow-400 p-6 pt-10 text-center shadow-md sticky top-0 z-40">
-                        <button 
-                            onClick={() => setLang(l => l === 'en' ? 'ta' : 'en')}
-                            className="absolute right-4 top-4 bg-white/30 backdrop-blur-md p-2 px-3 rounded-full flex items-center gap-2 text-[10px] font-black uppercase shadow-sm border border-white/20"
-                        >
-                            <Icon name="globe" className="w-3 h-3" />
-                            {lang === 'en' ? 'தமிழ்' : 'English'}
+                <div className="min-h-screen bg-slate-50 pb-32">
+                    {/* Top Info Area */}
+                    <header className="bg-yellow-400 p-6 text-center shadow-md sticky top-0 z-30">
+                        <button onClick={() => setLang(l => l === 'en' ? 'ta' : 'en')} className="absolute right-4 top-4 bg-white/40 p-2 px-3 rounded-full text-[10px] font-black uppercase">
+                            {lang === 'en' ? 'Tamil' : 'English'}
                         </button>
-                        <p className="text-[10px] font-black tracking-widest opacity-80 uppercase mb-1">{T.subtitle}</p>
-                        <h1 className="text-xl font-black tracking-tighter text-slate-900 leading-tight">{T.title}</h1>
+                        <p className="text-[10px] font-black opacity-70 mb-1 tracking-widest">{T.subtitle}</p>
+                        <h1 className="text-xl font-black mb-1 leading-tight">{T.title}</h1>
+                        <p className="text-[9px] font-bold leading-tight opacity-80 max-w-[250px] mx-auto uppercase">{T.address}</p>
+                        <p className="text-[10px] font-black mt-2 bg-black/10 inline-block px-4 py-1 rounded-full">{T.contacts}</p>
                     </header>
 
-                    <main className="flex-1 p-5 pb-40 max-w-2xl mx-auto w-full space-y-6 mt-2">
-                        {view === 'shop' ? (
-                            <React.Fragment>
-                                <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
-                                    <h2 className="font-black text-[11px] uppercase tracking-widest text-slate-400 mb-4">{T.bend}</h2>
-                                    <div className="grid grid-cols-2 gap-4 mb-5">
-                                        <div>
-                                            <label className="text-[9px] font-black text-slate-400 ml-1 uppercase">{T.size}</label>
-                                            <select className="w-full bg-slate-50 rounded-xl p-3 text-sm font-bold border border-slate-100 outline-none ring-yellow-400/30 focus:ring-4" 
-                                                value={pSize} onChange={e => {
-                                                    const newSize = Number(e.target.value);
-                                                    setPSize(newSize);
-                                                    setPWeight(Object.keys(PRODUCT_DATA.pipes.find(p => p.size === newSize).rates)[0]);
-                                                }}>
-                                                {PRODUCT_DATA.pipes.map(p => <option key={p.size} value={p.size}>{p.size}mm</option>)}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="text-[9px] font-black text-slate-400 ml-1 uppercase">{T.weight}</label>
-                                            <select className="w-full bg-slate-50 rounded-xl p-3 text-sm font-bold border border-slate-100 outline-none ring-yellow-400/30 focus:ring-4" 
-                                                value={pWeight} onChange={e => setPWeight(e.target.value)}>
-                                                {Object.keys(PRODUCT_DATA.pipes.find(p => p.size === pSize).rates).map(w => <option key={w} value={w}>{w}</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <button onClick={() => addToCart(`b-${pSize}-${pWeight}`, `${pSize}mm Bend ${pWeight}`, `${pSize}மிமீ பெண்ட் ${pWeight}`, currentBendRate)} 
-                                        className="w-full bg-yellow-400 hover:bg-yellow-500 active:scale-[0.98] transition-all py-4 rounded-xl font-black text-xs flex items-center justify-center gap-3 shadow-md">
-                                        <Icon name="plus" className="w-4 h-4" /> {T.add} (₹{currentBendRate.toFixed(2)})
-                                    </button>
-                                </div>
-
-                                <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
-                                    <h2 className="font-black text-[11px] uppercase tracking-widest text-slate-400 mb-4">{T.coupler}</h2>
-                                    <div className="grid grid-cols-2 gap-4 mb-5">
-                                        <div>
-                                            <label className="text-[9px] font-black text-slate-400 ml-1 uppercase">{T.size}</label>
-                                            <select className="w-full bg-slate-50 rounded-xl p-3 text-sm font-bold border border-slate-100 outline-none ring-blue-400/30 focus:ring-4" 
-                                                value={cSize} onChange={e => {
-                                                    const newSize = Number(e.target.value);
-                                                    setCSize(newSize);
-                                                    setCWeight(Object.keys(PRODUCT_DATA.coupler.find(p => p.size === newSize).rates)[0]);
-                                                }}>
-                                                {PRODUCT_DATA.coupler.map(p => <option key={p.size} value={p.size}>{p.size}mm</option>)}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="text-[9px] font-black text-slate-400 ml-1 uppercase">{T.weight}</label>
-                                            <select className="w-full bg-slate-50 rounded-xl p-3 text-sm font-bold border border-slate-100 outline-none ring-blue-400/30 focus:ring-4" 
-                                                value={cWeight} onChange={e => setCWeight(e.target.value)}>
-                                                {Object.keys(PRODUCT_DATA.coupler.find(p => p.size === cSize).rates).map(w => <option key={w} value={w}>{w}</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <button onClick={() => addToCart(`c-${cSize}-${cWeight}`, `${cSize}mm Coupler ${cWeight}`, `${cSize}மிமீ கப்ளர் ${cWeight}`, currentCouplerRate)} 
-                                        className="w-full bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98] transition-all py-4 rounded-xl font-black text-xs flex items-center justify-center gap-3 shadow-md">
-                                        <Icon name="plus" className="w-4 h-4" /> {T.add} (₹{currentCouplerRate.toFixed(2)})
-                                    </button>
-                                </div>
-
-                                <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
-                                    <h2 className="font-black text-[11px] uppercase tracking-widest text-slate-400 mb-4">{T.jet}</h2>
-                                    <div className="mb-5">
-                                        <label className="text-[9px] font-black text-slate-400 ml-1 uppercase">{T.size}</label>
-                                        <select className="w-full bg-slate-50 rounded-xl p-3 text-sm font-bold border border-slate-100 outline-none ring-slate-400/30 focus:ring-4" 
-                                            value={jName} onChange={e => setJName(e.target.value)}>
-                                            {PRODUCT_DATA.jetFootvale.map(j => <option key={j.name} value={j.name}>{j.name}</option>)}
-                                        </select>
-                                    </div>
-                                    <button onClick={() => addToCart(`j-${jName}`, `Jet ${jName}`, `ஜெட் ${jName}`, currentJetRate)} 
-                                        className="w-full bg-slate-900 text-white hover:bg-black active:scale-[0.98] transition-all py-4 rounded-xl font-black text-xs flex items-center justify-center gap-3 shadow-md">
-                                        <Icon name="plus" className="w-4 h-4" /> {T.add} (₹{currentJetRate.toFixed(2)})
-                                    </button>
-                                </div>
-                            </React.Fragment>
-                        ) : (
-                            <div className="space-y-4">
-                                {!isAdmin ? (
-                                    <div className="bg-white p-10 rounded-[2rem] text-center space-y-6 shadow-sm border border-slate-100">
-                                        <h3 className="font-black text-lg">{T.adminLogin}</h3>
-                                        <input type="password" placeholder="****" className="w-full p-4 rounded-xl bg-slate-100 font-black text-center text-xl outline-none ring-yellow-400 focus:ring-4" value={pass} onChange={e=>setPass(e.target.value)}/>
-                                        <button onClick={() => pass === "1234" ? setIsAdmin(true) : alert("Invalid")} className="w-full bg-slate-900 text-white p-4 rounded-xl font-black shadow-lg">Login</button>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        <div className="flex justify-between items-center px-2">
-                                            <h3 className="font-black text-[10px] uppercase tracking-widest text-slate-400">{T.recentBills}</h3>
-                                            <button onClick={()=>setIsAdmin(false)} className="text-xs text-red-500 font-black uppercase tracking-tighter">{T.logout}</button>
-                                        </div>
-                                        {orders.map(o => (
-                                            <div key={o.id} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
-                                                <div className="flex justify-between mb-4">
-                                                    <div>
-                                                        <p className="font-black text-base">{o.customerName}</p>
-                                                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">{o.createdAt?.toDate ? o.createdAt.toDate().toLocaleString() : '...'}</p>
-                                                    </div>
-                                                    <p className="font-black text-lg text-green-600">₹{o.total?.toFixed(2)}</p>
-                                                </div>
-                                                <div className="space-y-1 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                                                    {o.items?.map((i,idx) => (
-                                                        <div key={idx} className="flex justify-between text-[10px] font-bold text-slate-500">
-                                                            <span className="truncate pr-4">{i.qty} x {lang === 'en' ? i.labelEn : i.labelTa}</span>
-                                                            <span className="shrink-0">₹{(i.rate * i.qty).toFixed(2)}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                    <div className="p-5 space-y-5 max-w-md mx-auto">
+                        {/* Section: Bend */}
+                        <div className="bg-white p-5 rounded-[2rem] border-2 border-slate-100 shadow-sm">
+                            <h2 className="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-widest">{T.bend}</h2>
+                            <div className="grid grid-cols-2 gap-3 mb-4">
+                                <select className="bg-slate-50 p-4 rounded-2xl font-black border-2 border-slate-100 text-sm" value={pS} onChange={e => setPS(Number(e.target.value))}>
+                                    {PRODUCT_DATA.pipes.map(p => <option key={p.size} value={p.size}>{p.size}mm</option>)}
+                                </select>
+                                <select className="bg-slate-50 p-4 rounded-2xl font-black border-2 border-slate-100 text-sm" value={pW} onChange={e => setPW(e.target.value)}>
+                                    {foundPipe && Object.keys(foundPipe.rates).map(r => <option key={r} value={r}>{r}</option>)}
+                                </select>
                             </div>
-                        )}
-                    </main>
+                            <button onClick={() => addToCart(`b-${pS}-${pW}`, `${pS}mm Bend ${pW}`, `${pS}மிமீ பெண்ட் ${pW}`, currentPipeRate)} 
+                                className="w-full bg-yellow-400 hover:bg-yellow-500 p-4 rounded-2xl font-black text-sm flex items-center justify-center gap-3 active:scale-95 transition-transform">
+                                <span className="bg-black/10 px-3 py-1 rounded-lg flex items-center gap-1">
+                                    <Icon name="plus" className="w-4 h-4" />
+                                    ₹{(currentPipeRate || 0).toFixed(2)}
+                                </span>
+                                {T.add}
+                            </button>
+                        </div>
 
-                    {/* Check Bill Bubble */}
-                    {cart.length > 0 && view === 'shop' && !showCart && (
-                        <div className="fixed bottom-24 right-6 z-50">
-                            <button 
-                                onClick={() => setShowCart(true)} 
-                                className="bg-slate-900 text-white p-4 pr-6 rounded-full shadow-2xl flex items-center gap-3 border border-white/20 animate-in zoom-in duration-300"
-                            >
-                                <div className="bg-yellow-400 text-slate-900 w-8 h-8 rounded-full flex items-center justify-center font-black text-xs">
-                                    {cart.reduce((a, b) => a + b.qty, 0)}
-                                </div>
+                        {/* Section: Coupler */}
+                        <div className="bg-white p-5 rounded-[2rem] border-2 border-slate-100 shadow-sm">
+                            <h2 className="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-widest">{T.coupler}</h2>
+                            <div className="grid grid-cols-2 gap-3 mb-4">
+                                <select className="bg-slate-50 p-4 rounded-2xl font-black border-2 border-slate-100 text-sm" value={cS} onChange={e => setCS(Number(e.target.value))}>
+                                    {PRODUCT_DATA.coupler.map(p => <option key={p.size} value={p.size}>{p.size}mm</option>)}
+                                </select>
+                                <select className="bg-slate-50 p-4 rounded-2xl font-black border-2 border-slate-100 text-sm" value={cW} onChange={e => setCW(e.target.value)}>
+                                    {foundCoupler && Object.keys(foundCoupler.rates).map(r => <option key={r} value={r}>{r}</option>)}
+                                </select>
+                            </div>
+                            <button onClick={() => addToCart(`c-${cS}-${cW}`, `${cS}mm Coupler ${cW}`, `${cS}மிமீ கப்ளர் ${cW}`, currentCouplerRate)} 
+                                className="w-full bg-blue-600 text-white p-4 rounded-2xl font-black text-sm flex items-center justify-center gap-3 active:scale-95 transition-transform">
+                                <span className="bg-white/20 px-3 py-1 rounded-lg flex items-center gap-1">
+                                    <Icon name="plus" className="w-4 h-4" />
+                                    ₹{(currentCouplerRate || 0).toFixed(2)}
+                                </span>
+                                {T.add}
+                            </button>
+                        </div>
+
+                        {/* Section: Jet */}
+                        <div className="bg-white p-5 rounded-[2rem] border-2 border-slate-100 shadow-sm">
+                            <h2 className="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-widest">{T.jet}</h2>
+                            <select className="w-full bg-slate-50 p-4 rounded-2xl font-black border-2 border-slate-100 mb-4 text-sm" value={jN} onChange={e => setJN(e.target.value)}>
+                                {PRODUCT_DATA.jetFootvale.map(j => <option key={j.name} value={j.name}>{j.name}</option>)}
+                            </select>
+                            <button onClick={() => addToCart(`j-${jN}`, `Jet ${jN}`, `ஜெட் ${jN}`, currentJetRate)} 
+                                className="w-full bg-slate-900 text-white p-4 rounded-2xl font-black text-sm flex items-center justify-center gap-3 active:scale-95 transition-transform">
+                                <span className="bg-white/10 px-3 py-1 rounded-lg flex items-center gap-1">
+                                    <Icon name="plus" className="w-4 h-4" />
+                                    ₹{(currentJetRate || 0).toFixed(2)}
+                                </span>
+                                {T.add}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Footer Generation Button */}
+                    {cart.length > 0 && (
+                        <div className="fixed bottom-6 left-6 right-6 z-40">
+                            <button onClick={() => { setShowModal(true); setIsBillGenerated(false); }} className="w-full bg-slate-900 text-white p-5 rounded-full shadow-2xl flex justify-between items-center px-8 border-2 border-yellow-400">
                                 <div className="text-left">
-                                    <p className="text-[9px] font-black uppercase tracking-widest opacity-60 leading-none mb-1">{T.viewCart}</p>
-                                    <p className="text-lg font-black text-yellow-400 leading-none">₹{grandTotal.toFixed(2)}</p>
+                                    <p className="text-[10px] font-black text-yellow-400 uppercase leading-none mb-1">{T.total}</p>
+                                    <p className="font-black text-xl">₹{grandTotal.toFixed(2)}</p>
                                 </div>
+                                <span className="uppercase text-[10px] font-black tracking-widest bg-yellow-400 text-slate-900 px-5 py-2 rounded-full">{T.viewBill}</span>
                             </button>
                         </div>
                     )}
 
-                    {/* Navigation */}
-                    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around h-20 items-center z-40 px-6 safe-area-bottom shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
-                        <button onClick={() => setView('shop')} className={`flex flex-col items-center gap-1 transition-all ${view === 'shop' ? 'text-yellow-600 scale-110' : 'text-slate-300'}`}>
-                            <Icon name="shopping" className="w-5 h-5" />
-                            <span className="text-[9px] font-black uppercase tracking-widest">{T.shopTab}</span>
-                        </button>
-                        <button onClick={() => setView('records')} className={`flex flex-col items-center gap-1 transition-all ${view === 'records' ? 'text-yellow-600 scale-110' : 'text-slate-300'}`}>
-                            <Icon name="records" className="w-5 h-5" />
-                            <span className="text-[9px] font-black uppercase tracking-widest">{T.recordsTab}</span>
-                        </button>
-                    </nav>
+                    {/* Final Processing Modal */}
+                    {showModal && (
+                        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-white w-full max-w-sm rounded-[3rem] p-8 space-y-6 overflow-y-auto max-h-[90vh]">
+                                <div className="flex justify-between items-start">
+                                    <h3 className="font-black text-2xl">Bill Preview</h3>
+                                    <button onClick={() => setShowModal(false)} className="bg-slate-100 p-2 rounded-full"><Icon name="close" /></button>
+                                </div>
 
-                    {/* Cart Modal */}
-                    {showCart && (
-                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-end justify-center">
-                            <div className="bg-white w-full max-w-xl rounded-t-[3rem] overflow-hidden flex flex-col max-h-[95vh] shadow-2xl animate-in slide-in-from-bottom duration-300">
-                                <div className="p-6 border-b flex justify-between items-center bg-slate-50">
-                                    <h3 className="font-black text-[10px] uppercase tracking-[0.2em] text-slate-400">{T.cartTitle}</h3>
-                                    <button onClick={() => setShowCart(false)} className="bg-slate-200 hover:bg-slate-300 p-2 rounded-full transition-colors"><Icon name="close" className="w-5 h-5" /></button>
+                                <div className="space-y-4">
+                                    <div className="max-h-[30vh] overflow-y-auto space-y-2 no-scrollbar pr-2">
+                                        {cart.map(i => (
+                                            <div key={i.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
+                                                <div className="text-[11px] font-bold">
+                                                    <p>{lang==='en'?i.labelEn:i.labelTa}</p>
+                                                    <p className="opacity-50">{i.qty} x ₹{i.rate.toFixed(2)}</p>
+                                                </div>
+                                                <button onClick={() => removeFromCart(i.id)} className="text-red-400"><Icon name="trash" /></button>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="pt-2">
+                                        <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">{T.name}</label>
+                                        <input 
+                                            className="w-full bg-slate-100 p-4 rounded-xl font-black border-2 border-transparent focus:border-yellow-400 outline-none" 
+                                            placeholder="Enter Customer Name..." 
+                                            value={customerName} 
+                                            onChange={e => setCustomerName(e.target.value)}
+                                            disabled={isBillGenerated}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
-                                    {cart.map(item => (
-                                        <div key={item.id} className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                            <div className="flex-1 min-w-0 pr-4">
-                                                <p className="font-black text-[11px] truncate uppercase leading-tight">{lang === 'en' ? item.labelEn : item.labelTa}</p>
-                                                <p className="text-[10px] font-bold text-slate-400 mt-1">₹{item.rate.toFixed(2)} / pc</p>
-                                            </div>
-                                            <div className="flex items-center gap-4 bg-white p-1 rounded-xl shadow-sm border border-slate-100">
-                                                <button onClick={() => updateQty(item.id, -1)} className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors"><Icon name="minus" className="w-3 h-3" /></button>
-                                                <span className="font-black text-xs w-4 text-center">{item.qty}</span>
-                                                <button onClick={() => updateQty(item.id, 1)} className="w-7 h-7 flex items-center justify-center text-slate-900 hover:text-green-600 transition-colors"><Icon name="plus" className="w-3 h-3" /></button>
-                                            </div>
-                                            <p className="font-black text-xs w-16 text-right ml-4 shrink-0">₹{(item.rate*item.qty).toFixed(2)}</p>
+
+                                {!isBillGenerated ? (
+                                    <button 
+                                        onClick={handleGenerateBillAction}
+                                        className="w-full bg-slate-900 text-white p-5 rounded-2xl font-black flex items-center justify-center gap-2"
+                                    >
+                                        <Icon name="check" /> Generate Bill
+                                    </button>
+                                ) : (
+                                    <div className="space-y-3 pt-2">
+                                        <div className="text-center pb-4">
+                                            <p className="text-xs font-bold text-green-500">✓ Bill Generated Successfully!</p>
+                                            <p className="text-2xl font-black">₹{grandTotal.toFixed(2)}</p>
                                         </div>
-                                    ))}
-                                </div>
-                                <div className="p-8 bg-slate-900 text-white space-y-6 safe-area-bottom">
-                                    <div className="flex justify-between items-end">
-                                        <span className="text-[10px] font-black opacity-40 uppercase tracking-[0.3em]">{T.total}</span>
-                                        <span className="text-3xl font-black text-yellow-400 leading-none">₹{grandTotal.toFixed(2)}</span>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[9px] font-black uppercase tracking-widest text-white/30 ml-1">{T.nameLabel}</label>
-                                        <input className="w-full bg-white/10 p-5 rounded-2xl font-black outline-none border border-white/5 focus:border-yellow-400/50 transition-all text-sm placeholder:text-white/10" placeholder="..." value={customerName} onChange={e=>setCustomerName(e.target.value)} />
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-1 gap-3">
-                                        <button onClick={generatePDF} disabled={cart.length === 0} 
-                                            className="w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-2xl font-black flex items-center justify-center gap-3 text-sm transition-all border border-white/10">
-                                            <Icon name="file" className="w-4 h-4" /> {T.downloadPdf}
+                                        <button onClick={sendWhatsApp} className="w-full bg-green-500 text-white p-5 rounded-2xl font-black flex items-center justify-center gap-2 shadow-lg shadow-green-100">
+                                            <Icon name="whatsapp" /> {T.whatsapp}
                                         </button>
-                                        <button onClick={handleCheckout} disabled={isCheckingOut || cart.length === 0} 
-                                            className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-50 active:scale-95 transition-all p-5 rounded-2xl font-black text-slate-900 flex items-center justify-center gap-3 text-sm shadow-xl shadow-green-900/20">
-                                            <Icon name="send" className="w-4 h-4" /> {T.checkout}
+                                        <button onClick={downloadPDF} className="w-full bg-slate-900 text-white p-5 rounded-2xl font-black text-sm flex items-center justify-center gap-2">
+                                            <Icon name="file" /> {T.pdf}
                                         </button>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
                     )}
