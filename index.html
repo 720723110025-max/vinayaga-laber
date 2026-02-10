@@ -25,7 +25,9 @@ button { border-radius:12px; font-size:16px; }
   to { opacity: 1; transform: translateX(0); }
 }
 .tamil-text { font-family: 'Arial Unicode MS', 'TAMu_Kadambri', 'Latha', sans-serif; }
-.price { font-family: monospace; }
+.dual-text { display: flex; flex-direction: column; }
+.english-text { font-weight: 500; }
+.tamil-text-part { font-size: 0.9em; color: #555; margin-top: 2px; }
 </style>
 </head>
 
@@ -90,8 +92,7 @@ const TRANSLATIONS = {
     bend: "BEND",
     coupler: "COUPLER",
     jetValve: "JET VALVE",
-    search: "Search...",
-    addToCart: "🛒 ADD TO CART",
+    addToCart: "Add Selected to Cart",
     cart: "Cart",
     items: "items",
     total: "Total",
@@ -112,11 +113,7 @@ const TRANSLATIONS = {
     rate: "Rate",
     amount: "Amount",
     subtotal: "Subtotal:",
-    each: "each",
-    selectItems: "Select items above",
-    itemsAdded: "items added to cart!",
-    pleaseSelect: "Please select items first!",
-    enterDetails: "Enter customer details"
+    each: "each"
   },
   ta: {
     title: "ஸ்ரீ விநாயக லேபர் வொர்க்ஸ்",
@@ -127,8 +124,7 @@ const TRANSLATIONS = {
     bend: "பெண்ட்",
     coupler: "கப்லர்",
     jetValve: "ஜெட் வால்வ்",
-    search: "தேடு...",
-    addToCart: "🛒 கார்ட்டில் சேர்",
+    addToCart: "தேர்ந்தெடுத்தவற்றை கார்ட்டில் சேர்க்கவும்",
     cart: "கார்ட்",
     items: "பொருட்கள்",
     total: "மொத்தம்",
@@ -149,18 +145,17 @@ const TRANSLATIONS = {
     rate: "விலை",
     amount: "தொகை",
     subtotal: "துணைத்தொகை:",
-    each: "ஒவ்வொன்றும்",
-    selectItems: "மேலே பொருட்களைத் தேர்ந்தெடுக்கவும்",
-    itemsAdded: "பொருட்கள் கார்ட்டில் சேர்க்கப்பட்டன!",
-    pleaseSelect: "முதலில் பொருட்களைத் தேர்ந்தெடுக்கவும்!",
-    enterDetails: "வாடிக்கையாளர் விவரங்களை உள்ளிடவும்"
+    each: "ஒவ்வொன்றும்"
   }
 };
 
-// Helper function to format prices with 2 decimal places
-const formatPrice = (price) => {
-  return parseFloat(price).toFixed(2);
-};
+// Function to render dual language text
+const DualText = ({ en, ta }) => (
+  <div className="dual-text">
+    <span className="english-text">{en}</span>
+    <span className="tamil-text tamil-text-part">{ta}</span>
+  </div>
+);
 
 function App() {
   const [cart, setCart] = useState([]);
@@ -176,13 +171,9 @@ function App() {
   const [showBillOptions, setShowBillOptions] = useState(false);
   const [currentBill, setCurrentBill] = useState(null);
   const [activeCategory, setActiveCategory] = useState("bend");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [language, setLanguage] = useState("en");
   const [productQuantities, setProductQuantities] = useState({});
-  const [showCartNotification, setShowCartNotification] = useState(false);
-  const [notificationMessage, setNotificationMessage] = useState("");
 
-  const t = TRANSLATIONS[language];
+  const t = TRANSLATIONS.en; // Using English for functions, but display will be dual
 
   useEffect(() => {
     localStorage.setItem('billNo', billNo);
@@ -217,14 +208,6 @@ function App() {
     setProductQuantities(quantities);
   }, []);
 
-  const showNotification = (message) => {
-    setNotificationMessage(message);
-    setShowCartNotification(true);
-    setTimeout(() => {
-      setShowCartNotification(false);
-    }, 3000);
-  };
-
   const updateQuantity = (productKey, change) => {
     setProductQuantities(prev => {
       const current = prev[productKey] || 0;
@@ -245,9 +228,9 @@ function App() {
         if (quantity > 0) {
           newItems.push({ 
             name: `${b.size}mm Bend ${weight}`, 
-            rate: parseFloat(rate),
+            rate: rate,
             quantity: quantity,
-            subtotal: parseFloat((rate * quantity).toFixed(2)),
+            subtotal: rate * quantity,
             category: 'bend',
             productKey: key
           });
@@ -264,9 +247,9 @@ function App() {
         if (quantity > 0) {
           newItems.push({ 
             name: `${c.size}mm Coupler ${weight}`, 
-            rate: parseFloat(rate),
+            rate: rate,
             quantity: quantity,
-            subtotal: parseFloat((rate * quantity).toFixed(2)),
+            subtotal: rate * quantity,
             category: 'coupler',
             productKey: key
           });
@@ -282,9 +265,9 @@ function App() {
       if (quantity > 0) {
         newItems.push({ 
           name: `Jet ${j.name}`, 
-          rate: parseFloat(j.rate),
+          rate: j.rate,
           quantity: quantity,
-          subtotal: parseFloat((j.rate * quantity).toFixed(2)),
+          subtotal: j.rate * quantity,
           category: 'jet',
           productKey: key
         });
@@ -301,10 +284,10 @@ function App() {
       });
       setProductQuantities(resetQuantities);
       
-      // Show success notification
-      showNotification(`${newItems.length} ${t.itemsAdded}`);
+      // Show success message in both languages
+      alert(`${newItems.length} items added to cart!\n${newItems.length} பொருட்கள் கார்ட்டில் சேர்க்கப்பட்டன!`);
     } else {
-      showNotification(t.pleaseSelect);
+      alert("Please select quantities before adding to cart!\nகார்ட்டில் சேர்க்க முன் அளவுகளைத் தேர்ந்தெடுக்கவும்!");
     }
   };
 
@@ -316,14 +299,12 @@ function App() {
     setProductQuantities(resetQuantities);
   };
 
-  const total = useMemo(() => {
-    const calculated = cart.reduce((s, i) => s + (i.subtotal || i.rate), 0);
-    return parseFloat(calculated.toFixed(2));
-  }, [cart]);
+  const total = useMemo(() => 
+    cart.reduce((s, i) => s + (i.subtotal || i.rate), 0), [cart]);
 
   const generateBill = () => {
     if (!customer || cart.length === 0) {
-      showNotification(t.enterDetails);
+      alert("Please enter customer name and add items to cart!\nவாடிக்கையாளர் பெயரை உள்ளிட்டு பொருட்களை கார்ட்டில் சேர்க்கவும்!");
       return;
     }
 
@@ -332,7 +313,7 @@ function App() {
       customer,
       items: cart.map(item => ({
         ...item,
-        subtotal: parseFloat((item.subtotal || item.rate).toFixed(2))
+        subtotal: item.subtotal || item.rate
       })),
       total,
       date: new Date().toLocaleString()
@@ -346,9 +327,9 @@ function App() {
   const sendWhatsApp = (bill) => {
     const itemsText = bill.items.map(i => {
       if (i.quantity > 1) {
-        return `• ${i.name} (${i.quantity} x ₹${formatPrice(i.rate)}) = ₹${formatPrice(i.subtotal)}`;
+        return `• ${i.name} (${i.quantity} x ₹${i.rate}) = ₹${i.subtotal}`;
       }
-      return `• ${i.name} - ₹${formatPrice(i.rate)}`;
+      return `• ${i.name} - ₹${i.rate}`;
     }).join("\n");
 
     const msg = 
@@ -361,7 +342,7 @@ Date: ${bill.date}
 
 ${itemsText}
 
-TOTAL: ₹${formatPrice(bill.total)}`;
+TOTAL: ₹${bill.total}`;
     
     window.open(`https://wa.me/${WHATSAPP_NO}?text=${encodeURIComponent(msg)}`, '_blank');
   };
@@ -384,13 +365,13 @@ TOTAL: ₹${formatPrice(bill.total)}`;
     const tableData = bill.items.map(i => [
       i.name,
       i.quantity || 1,
-      `₹${formatPrice(i.rate)}`,
-      `₹${formatPrice(i.subtotal || i.rate)}`
+      `₹${i.rate}`,
+      `₹${i.subtotal || i.rate}`
     ]);
     
     doc.autoTable({
       startY: 48,
-      head: [[t.item || "Item", t.quantity, t.rate, t.amount]],
+      head: [["Item", "Qty", "Rate", "Amount"]],
       body: tableData,
       theme: 'striped',
       headStyles: { fillColor: [34, 197, 94] }
@@ -399,10 +380,10 @@ TOTAL: ₹${formatPrice(bill.total)}`;
     const finalY = doc.lastAutoTable.finalY + 10;
     doc.setFontSize(12);
     doc.setFont(undefined, 'bold');
-    doc.text(`${t.total} Amount: ₹${formatPrice(bill.total)}`, 14, finalY);
+    doc.text(`Total Amount: ₹${bill.total}`, 14, finalY);
     
     doc.setFontSize(10);
-    doc.text(t.thankYou, 14, finalY + 10);
+    doc.text("Thank you for your business!", 14, finalY + 10);
     
     doc.save(`Bill_${bill.billNo}_${bill.customer}.pdf`);
   };
@@ -447,81 +428,38 @@ TOTAL: ₹${formatPrice(bill.total)}`;
       const item = { ...newCart[index] };
       const newQuantity = Math.max(1, (item.quantity || 1) + change);
       item.quantity = newQuantity;
-      item.subtotal = parseFloat((item.rate * newQuantity).toFixed(2));
+      item.subtotal = item.rate * newQuantity;
       newCart[index] = item;
       return newCart;
     });
   };
 
-  // Filtered products based on search
-  const filteredProducts = useMemo(() => {
-    if (!searchTerm) {
-      if (activeCategory === "bend") return PRODUCTS.bend;
-      if (activeCategory === "coupler") return PRODUCTS.coupler;
-      return PRODUCTS.jet;
-    }
-
-    const term = searchTerm.toLowerCase();
-    if (activeCategory === "bend") {
-      return PRODUCTS.bend.filter(b => 
-        b.size.toString().includes(term) ||
-        Object.keys(b.rates).some(w => w.toLowerCase().includes(term))
-      );
-    }
-    if (activeCategory === "coupler") {
-      return PRODUCTS.coupler.filter(c => 
-        c.size.toString().includes(term) ||
-        Object.keys(c.rates).some(w => w.toLowerCase().includes(term))
-      );
-    }
-    return PRODUCTS.jet.filter(j => 
-      j.name.toLowerCase().includes(term)
-    );
-  }, [activeCategory, searchTerm]);
-
-  // Calculate total selected items count
-  const selectedItemsCount = useMemo(() => {
-    return Object.values(productQuantities).filter(qty => qty > 0).reduce((sum, qty) => sum + qty, 0);
-  }, [productQuantities]);
+  // Get products for current category
+  const currentProducts = useMemo(() => {
+    if (activeCategory === "bend") return PRODUCTS.bend;
+    if (activeCategory === "coupler") return PRODUCTS.coupler;
+    return PRODUCTS.jet;
+  }, [activeCategory]);
 
   return (
     <div className="max-w-md mx-auto p-4 space-y-4 relative pb-28">
 
-      {/* Notification */}
-      {showCartNotification && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 animate-bounce">
-          <div className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg font-medium">
-            {notificationMessage}
-          </div>
-        </div>
-      )}
-
-      {/* Language Switcher */}
-      <div className="fixed top-4 left-4 z-10">
-        <select 
-          value={language}
-          onChange={(e) => setLanguage(e.target.value)}
-          className="text-sm p-2 rounded-lg bg-white shadow border"
-        >
-          <option value="en">English</option>
-          <option value="ta">தமிழ்</option>
-        </select>
-      </div>
-
       {/* Hidden owner login trigger */}
       <div 
-        className="fixed top-4 right-4 opacity-30 cursor-pointer z-10"
+        className="hidden-login" 
         onClick={() => setShowLogin(true)}
-        title={t.ownerLogin}
+        title="Owner Login / உரிமையாளர் உள்நுழைவு"
       >
-        👑
+        🔒
       </div>
 
       {/* Owner Login Modal */}
       {showLogin && !ownerMode && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white p-6 rounded-xl w-full max-w-sm">
-            <h3 className="font-black mb-4 text-center text-lg">{t.ownerLogin}</h3>
+            <h3 className="font-black mb-4 text-center text-lg">
+              <DualText en="Owner Login" ta="உரிமையாளர் உள்நுழைவு" />
+            </h3>
             <input 
               type="password" 
               placeholder="Enter Password"
@@ -539,17 +477,17 @@ TOTAL: ₹${formatPrice(bill.total)}`;
                     setShowLogin(false);
                     setPassword("");
                   } else {
-                    showNotification("Incorrect password");
+                    alert("Incorrect password / தவறான கடவுச்சொல்");
                   }
                 }}
               >
-                {language === 'en' ? 'Login' : 'உள்நுழைவு'}
+                <DualText en="Login" ta="உள்நுழைவு" />
               </button>
               <button 
                 className="bg-gray-300 text-black flex-1 p-3 rounded-lg font-medium"
                 onClick={() => setShowLogin(false)}
               >
-                {language === 'en' ? 'Cancel' : 'ரத்து செய்'}
+                <DualText en="Cancel" ta="ரத்து செய்" />
               </button>
             </div>
           </div>
@@ -560,49 +498,67 @@ TOTAL: ₹${formatPrice(bill.total)}`;
       {showBillOptions && currentBill && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white p-6 rounded-xl w-full max-w-sm">
-            <h3 className="font-black mb-4 text-center text-lg">🎉 {t.billGenerated}</h3>
-            <p className="text-center mb-2 font-medium">{language === 'en' ? 'Bill No:' : 'பில் எண்:'} #{currentBill.billNo}</p>
-            <p className="text-center mb-6 text-gray-600">{language === 'en' ? 'Customer:' : 'வாடிக்கையாளர்:'} {currentBill.customer}</p>
+            <h3 className="font-black mb-4 text-center text-lg">🎉 
+              <DualText en="Bill Generated!" ta="பில் உருவாக்கப்பட்டது!" />
+            </h3>
+            <p className="text-center mb-2 font-medium">
+              <DualText en={`Bill No: #${currentBill.billNo}`} ta={`பில் எண்: #${currentBill.billNo}`} />
+            </p>
+            <p className="text-center mb-6 text-gray-600">
+              <DualText en={`Customer: ${currentBill.customer}`} ta={`வாடிக்கையாளர்: ${currentBill.customer}`} />
+            </p>
             
             <div className="space-y-3">
               <button 
                 className="bg-gradient-to-r from-green-500 to-blue-500 text-white w-full p-3 rounded-lg font-medium shadow-md"
                 onClick={handleBothActions}
               >
-                📲 {t.sendWhatsAppPDF}
+                📲 <DualText en="Send WhatsApp & Download PDF" ta="WhatsApp அனுப்பு & PDF பதிவிறக்கு" />
               </button>
               
               <button 
                 className="bg-green-600 text-white w-full p-3 rounded-lg font-medium"
                 onClick={handleSendWhatsApp}
               >
-                📲 {t.sendWhatsApp}
+                📲 <DualText en="Send via WhatsApp" ta="WhatsApp மூலம் அனுப்பு" />
               </button>
               
               <button 
                 className="bg-blue-600 text-white w-full p-3 rounded-lg font-medium"
                 onClick={handleDownloadPDF}
               >
-                📥 {t.downloadPDF}
+                📥 <DualText en="Download PDF" ta="PDF பதிவிறக்கு" />
               </button>
               
               <button 
                 className="bg-gray-100 text-gray-800 w-full p-3 rounded-lg font-medium border"
                 onClick={completeBillProcess}
               >
-                ✅ {t.doneNewBill}
+                ✅ <DualText en="Done & New Bill" ta="முடிந்தது & புதிய பில்" />
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* HEADER */}
-      <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 p-4 rounded-xl text-center font-black shadow-lg mt-8">
-        <div className="text-xl">{t.title}</div>
-        <div className={`text-xs font-normal mt-1 ${language === 'ta' ? 'tamil-text' : ''}`}>
-          {t.address}<br/>
-          📞 {t.phone}
+      {/* HEADER - Using Dual Language */}
+      <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 p-4 rounded-xl text-center font-black shadow-lg mt-2">
+        <div className="text-xl">
+          <DualText en="SRI VINAYAGA LABER WORKS" ta="ஸ்ரீ விநாயக லேபர் வொர்க்ஸ்" />
+        </div>
+        <div className="text-xs font-normal mt-1">
+          <div className="tamil-text">
+            <DualText 
+              en="Sinthan Nagar, Krishnampalayam, Erode - 03" 
+              ta="சிந்தன் நகர், கிருஷ்ணம்பாளையம், ஈரோடு - 03" 
+            />
+          </div>
+          <div className="mt-1">
+            <DualText 
+              en="📞 Cell: 9095786363, 8015767107" 
+              ta="📞 தொலைபேசி: 9095786363, 8015767107" 
+            />
+          </div>
         </div>
       </div>
 
@@ -610,16 +566,20 @@ TOTAL: ₹${formatPrice(bill.total)}`;
       {ownerMode && (
         <div className="bg-white p-4 rounded-xl shadow">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-black text-lg">📋 {t.orderHistory}</h3>
+            <h3 className="font-black text-lg">
+              <DualText en="📋 Order History" ta="📋 ஆர்டர் வரலாறு" />
+            </h3>
             <button 
               className="text-sm bg-red-500 text-white px-4 py-2 rounded-lg font-medium"
               onClick={() => setOwnerMode(false)}
             >
-              {t.logout}
+              <DualText en="Logout" ta="வெளியேறு" />
             </button>
           </div>
           {history.length===0 ? (
-            <p className="text-gray-500 text-center py-4">{t.noBills}</p>
+            <p className="text-gray-500 text-center py-4">
+              <DualText en="No bills yet" ta="இன்னும் பில்ல்கள் இல்லை" />
+            </p>
           ) : (
             <div className="space-y-3 max-h-80 overflow-y-auto">
               {history.map(b=>(
@@ -630,7 +590,7 @@ TOTAL: ₹${formatPrice(bill.total)}`;
                       <div className="text-sm text-gray-600">{b.customer}</div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-green-600">₹{formatPrice(b.total)}</div>
+                      <div className="font-bold text-green-600">₹{b.total}</div>
                       <div className="text-xs text-gray-500">{b.date.split(',')[0]}</div>
                     </div>
                   </div>
@@ -643,120 +603,69 @@ TOTAL: ₹${formatPrice(bill.total)}`;
 
       {/* CUSTOMER INPUT */}
       <div className="bg-white p-4 rounded-xl shadow">
-        <label className="block font-medium mb-2">👤 {t.customerName}</label>
+        <label className="block font-medium mb-2">
+          <DualText en="👤 Customer Name" ta="👤 வாடிக்கையாளர் பெயர்" />
+        </label>
         <input 
-          placeholder={t.customerPlaceholder}
+          placeholder="Enter customer name / வாடிக்கையாளர் பெயரை உள்ளிடவும்"
           value={customer} 
           onChange={e=>setCustomer(e.target.value)}
           className="text-lg"
         />
       </div>
 
-      {/* ADD TO CART BUTTON - MORE PROMINENT */}
-      {selectedItemsCount > 0 && (
-        <div className="sticky top-2 z-10">
-          <button 
-            onClick={addToCartFromQuantities}
-            className="bg-gradient-to-r from-green-500 to-green-600 text-white w-full p-4 rounded-xl font-bold text-lg shadow-lg animate-pulse border-4 border-yellow-300"
-          >
-            🛒 {t.addToCart} ({selectedItemsCount} {t.items})
-          </button>
-        </div>
-      )}
-
       {/* PRODUCT SELECTION */}
       <div className="bg-white rounded-xl shadow overflow-hidden">
         {/* Category Tabs */}
         <div className="flex border-b">
           <button
-            className={`flex-1 p-3 font-medium ${activeCategory === "bend" ? "bg-yellow-100 text-yellow-800 border-b-2 border-yellow-500" : "bg-gray-100"} ${language === 'ta' ? 'tamil-text' : ''}`}
+            className={`flex-1 p-3 font-medium ${activeCategory === "bend" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100"}`}
             onClick={() => setActiveCategory("bend")}
           >
-            🔧 {t.bend}
+            🔧 <DualText en="BEND" ta="பெண்ட்" />
           </button>
           <button
-            className={`flex-1 p-3 font-medium ${activeCategory === "coupler" ? "bg-yellow-100 text-yellow-800 border-b-2 border-yellow-500" : "bg-gray-100"} ${language === 'ta' ? 'tamil-text' : ''}`}
+            className={`flex-1 p-3 font-medium ${activeCategory === "coupler" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100"}`}
             onClick={() => setActiveCategory("coupler")}
           >
-            🔗 {t.coupler}
+            🔗 <DualText en="COUPLER" ta="கப்லர்" />
           </button>
           <button
-            className={`flex-1 p-3 font-medium ${activeCategory === "jet" ? "bg-yellow-100 text-yellow-800 border-b-2 border-yellow-500" : "bg-gray-100"} ${language === 'ta' ? 'tamil-text' : ''}`}
+            className={`flex-1 p-3 font-medium ${activeCategory === "jet" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100"}`}
             onClick={() => setActiveCategory("jet")}
           >
-            💧 {t.jetValve}
+            💧 <DualText en="JET VALVE" ta="ஜெட் வால்வ்" />
           </button>
-        </div>
-
-        {/* Search */}
-        <div className="p-3 border-b">
-          <input
-            type="text"
-            placeholder={`${t.search} ${t[activeCategory] || activeCategory}...`}
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="text-sm"
-          />
         </div>
 
         {/* Product List */}
         <div className="max-h-80 overflow-y-auto p-3">
-          {filteredProducts.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">{t.selectItems}</p>
-          ) : (
-            filteredProducts.map((product, index) => {
-              if (activeCategory === "bend" || activeCategory === "coupler") {
-                return Object.entries(product.rates).map(([weight, rate]) => {
-                  const productKey = `${activeCategory}_${product.size}_${weight}`;
-                  const quantity = productQuantities[productKey] || 0;
-                  
-                  return (
-                    <div key={`${product.size}-${weight}`} className="product-card border border-gray-200 rounded-lg p-3 mb-3 hover:shadow-md">
-                      <div className="flex justify-between items-center mb-2">
-                        <div>
-                          <div className="font-bold">{product.size}mm {t[activeCategory] || activeCategory.toUpperCase()}</div>
-                          <div className="text-sm text-gray-600">{weight}</div>
-                        </div>
-                        <div className="font-bold text-green-600 price">₹{formatPrice(rate)}</div>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <button 
-                            onClick={() => updateQuantity(productKey, -1)}
-                            disabled={quantity === 0}
-                            className={`quantity-btn ${quantity === 0 ? 'bg-gray-200 text-gray-400' : 'bg-red-100 text-red-600 hover:bg-red-200'}`}
-                          >
-                            −
-                          </button>
-                          <div className="w-10 text-center font-bold bg-gray-100 py-1 rounded">{quantity}</div>
-                          <button 
-                            onClick={() => updateQuantity(productKey, 1)}
-                            className="quantity-btn bg-green-100 text-green-600 hover:bg-green-200"
-                          >
-                            +
-                          </button>
-                        </div>
-                        <div className="text-sm font-medium">
-                          {t.subtotal} <span className="text-blue-600 font-bold price">₹{formatPrice(rate * quantity)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                });
-              } else {
-                // Jet Valves
-                const productKey = `jet_${product.name}`;
+          {currentProducts.map((product, index) => {
+            if (activeCategory === "bend" || activeCategory === "coupler") {
+              return Object.entries(product.rates).map(([weight, rate]) => {
+                const productKey = `${activeCategory}_${product.size}_${weight}`;
                 const quantity = productQuantities[productKey] || 0;
                 
                 return (
-                  <div key={product.name} className="product-card border border-gray-200 rounded-lg p-3 mb-3 hover:shadow-md">
+                  <div key={`${product.size}-${weight}`} className="product-card border border-gray-200 rounded-lg p-3 mb-3">
                     <div className="flex justify-between items-center mb-2">
                       <div>
-                        <div className="font-bold">{t.jetValve}</div>
-                        <div className="text-sm text-gray-600">{product.name}</div>
+                        <div className="font-bold">
+                          {activeCategory === "bend" ? (
+                            <DualText 
+                              en={`${product.size}mm BEND`} 
+                              ta={`${product.size}mm பெண்ட்`} 
+                            />
+                          ) : (
+                            <DualText 
+                              en={`${product.size}mm COUPLER`} 
+                              ta={`${product.size}mm கப்லர்`} 
+                            />
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-600">{weight}</div>
                       </div>
-                      <div className="font-bold text-green-600 price">₹{formatPrice(product.rate)}</div>
+                      <div className="font-bold text-green-600">₹{rate}</div>
                     </div>
                     
                     <div className="flex items-center justify-between">
@@ -764,70 +673,123 @@ TOTAL: ₹${formatPrice(bill.total)}`;
                         <button 
                           onClick={() => updateQuantity(productKey, -1)}
                           disabled={quantity === 0}
-                          className={`quantity-btn ${quantity === 0 ? 'bg-gray-200 text-gray-400' : 'bg-red-100 text-red-600 hover:bg-red-200'}`}
+                          className={`quantity-btn ${quantity === 0 ? 'bg-gray-200 text-gray-400' : 'bg-red-100 text-red-600'}`}
                         >
                           −
                         </button>
-                        <div className="w-10 text-center font-bold bg-gray-100 py-1 rounded">{quantity}</div>
+                        <div className="w-10 text-center font-bold">{quantity}</div>
                         <button 
                           onClick={() => updateQuantity(productKey, 1)}
-                          className="quantity-btn bg-green-100 text-green-600 hover:bg-green-200"
+                          className="quantity-btn bg-green-100 text-green-600"
                         >
                           +
                         </button>
                       </div>
                       <div className="text-sm font-medium">
-                        {t.subtotal} <span className="text-blue-600 font-bold price">₹{formatPrice(product.rate * quantity)}</span>
+                        <DualText en="Subtotal:" ta="துணைத்தொகை:" /> <span className="text-blue-600">₹{rate * quantity}</span>
                       </div>
                     </div>
                   </div>
                 );
-              }
-            })
-          )}
+              });
+            } else {
+              // Jet Valves
+              const productKey = `jet_${product.name}`;
+              const quantity = productQuantities[productKey] || 0;
+              
+              return (
+                <div key={product.name} className="product-card border border-gray-200 rounded-lg p-3 mb-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <div>
+                      <div className="font-bold">
+                        <DualText en="JET FOOT VALVE" ta="ஜெட் ஃபுட் வால்வ்" />
+                      </div>
+                      <div className="text-sm text-gray-600">{product.name}</div>
+                    </div>
+                    <div className="font-bold text-green-600">₹{product.rate}</div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        onClick={() => updateQuantity(productKey, -1)}
+                        disabled={quantity === 0}
+                        className={`quantity-btn ${quantity === 0 ? 'bg-gray-200 text-gray-400' : 'bg-red-100 text-red-600'}`}
+                      >
+                        −
+                      </button>
+                      <div className="w-10 text-center font-bold">{quantity}</div>
+                      <button 
+                        onClick={() => updateQuantity(productKey, 1)}
+                        className="quantity-btn bg-green-100 text-green-600"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className="text-sm font-medium">
+                      <DualText en="Subtotal:" ta="துணைத்தொகை:" /> <span className="text-blue-600">₹{product.rate * quantity}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+          })}
         </div>
       </div>
+
+      {/* Add Selected to Cart Button */}
+      <button 
+        onClick={addToCartFromQuantities}
+        className="bg-gradient-to-r from-blue-500 to-purple-600 text-white w-full p-3 rounded-xl font-bold text-lg shadow-lg"
+      >
+        🛒 <DualText en="Add Selected to Cart" ta="தேர்ந்தெடுத்தவற்றை கார்ட்டில் சேர்க்கவும்" />
+      </button>
 
       {/* CART - Fixed at bottom */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 max-w-md mx-auto">
         <div className="flex justify-between items-center mb-3">
-          <h3 className="font-black text-lg">🛍️ {t.cart} ({cart.length} {t.items})</h3>
-          <div className="font-bold text-green-600 text-lg price">₹{formatPrice(total)}</div>
+          <h3 className="font-black text-lg">
+            🛍️ <DualText en={`Cart (${cart.length} items)`} ta={`கார்ட் (${cart.length} பொருட்கள்)`} />
+          </h3>
+          <div className="font-bold text-green-600 text-lg">₹{total}</div>
         </div>
         
         <div className="max-h-40 overflow-y-auto mb-3">
           {cart.length === 0 ? (
-            <p className="text-gray-500 text-center py-2">{language === 'en' ? 'Cart is empty' : 'கார்ட் காலியாக உள்ளது'}</p>
+            <p className="text-gray-500 text-center py-2">
+              <DualText en="Cart is empty" ta="கார்ட் காலியாக உள்ளது" />
+            </p>
           ) : (
             <div className="space-y-2">
               {cart.map((item, index) => (
-                <div key={index} className="cart-item bg-gray-50 p-2 rounded-lg hover:bg-gray-100">
+                <div key={index} className="cart-item bg-gray-50 p-2 rounded-lg">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="font-medium text-sm">{item.name}</div>
-                      <div className="text-xs text-gray-600">₹{formatPrice(item.rate)} {t.each}</div>
+                      <div className="text-xs text-gray-600">
+                        <DualText en={`₹${item.rate} each`} ta={`₹${item.rate} ஒவ்வொன்றும்`} />
+                      </div>
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className="flex items-center space-x-1">
                         <button 
                           onClick={() => updateCartQuantity(index, -1)}
-                          className="w-6 h-6 rounded-full bg-gray-200 text-sm hover:bg-gray-300"
+                          className="w-6 h-6 rounded-full bg-gray-200 text-sm"
                         >
                           −
                         </button>
                         <span className="font-bold w-6 text-center">{item.quantity || 1}</span>
                         <button 
                           onClick={() => updateCartQuantity(index, 1)}
-                          className="w-6 h-6 rounded-full bg-gray-200 text-sm hover:bg-gray-300"
+                          className="w-6 h-6 rounded-full bg-gray-200 text-sm"
                         >
                           +
                         </button>
                       </div>
-                      <div className="font-bold w-20 text-right price">₹{formatPrice(item.subtotal || item.rate)}</div>
+                      <div className="font-bold w-20 text-right">₹{item.subtotal || item.rate}</div>
                       <button 
                         onClick={() => removeFromCart(index)}
-                        className="text-red-500 text-lg hover:text-red-700"
-                        title={language === 'en' ? 'Remove' : 'நீக்கு'}
+                        className="text-red-500 text-lg"
                       >
                         ×
                       </button>
@@ -842,13 +804,19 @@ TOTAL: ₹${formatPrice(bill.total)}`;
         <button 
           onClick={generateBill}
           disabled={!customer || cart.length === 0}
-          className={`w-full p-3 rounded-xl font-bold text-lg transition-all ${
+          className={`w-full p-3 rounded-xl font-bold text-lg ${
             !customer || cart.length === 0 
               ? 'bg-gray-300 text-gray-500' 
-              : 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg hover:shadow-xl'
+              : 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg'
           }`}
         >
-          {!customer ? t.enterCustomerName : cart.length === 0 ? t.addItems : `💰 ${t.generateBill}`}
+          {!customer ? (
+            <DualText en="Enter Customer Name" ta="வாடிக்கையாளர் பெயரை உள்ளிடவும்" />
+          ) : cart.length === 0 ? (
+            <DualText en="Add Items to Cart" ta="கார்ட்டில் பொருட்களை சேர்க்கவும்" />
+          ) : (
+            <span>💰 <DualText en="Generate Bill" ta="பில் உருவாக்கு" /></span>
+          )}
         </button>
       </div>
 
