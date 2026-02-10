@@ -1,478 +1,236 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sri Vinayaga Laber Works</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; margin: 0; padding: 0; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        select { 
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); 
-            background-repeat: no-repeat; 
-            background-position: right 0.75rem center; 
-            background-size: 1rem; 
-            -webkit-appearance: none;
-        }
-        .tap-scale:active { transform: scale(0.97); }
-        @keyframes slide-up { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .animate-slide-up { animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sri Vinayaga Laber Works</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+body { font-family: system-ui; background:#f8fafc; }
+select, input { width:100%; padding:10px; border-radius:10px; margin-bottom:8px; }
+button { border-radius:12px; }
+</style>
 </head>
-<body class="text-slate-900">
-    <div id="root"></div>
 
-    <!-- Firebase Initialization -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, deleteDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+<body>
+<div id="root"></div>
 
-        try {
-            const firebaseConfig = JSON.parse(__firebase_config);
-            const app = initializeApp(firebaseConfig);
-            const db = getFirestore(app);
-            const auth = getAuth(app);
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'sri-vinayaga-laber-works';
+<script type="text/babel">
+const { useState, useMemo } = React;
 
-            // Attach to window so React can access them
-            window.Firebase = { 
-                db, auth, appId, collection, addDoc, onSnapshot, 
-                query, deleteDoc, doc, Timestamp, signInAnonymously, 
-                signInWithCustomToken, onAuthStateChanged 
-            };
-            
-            // Dispatch event to signal Firebase is ready
-            window.dispatchEvent(new Event('firebase-ready'));
-        } catch (error) {
-            console.error("Firebase Initialization Error:", error);
-        }
-    </script>
+/* 🔐 OWNER */
+const OWNER_PASSWORD = "6363";
+const WHATSAPP_NO = "918643861100";
 
-    <!-- React App Logic -->
-    <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+/* 📦 PRODUCTS (EXACT FROM EXCEL – UNCHANGED) */
+const PRODUCTS = {
+  bend: [
+    { size: 20, rates: { "15 Kgs": 1.40 } },
+    { size: 25, rates: { "10 Kgs": 1.50, "15 Kgs": 2.00 } },
+    { size: 32, rates: { "10 Kgs": 2.50, "15 Kgs": 2.80 } },
+    { size: 40, rates: { "6 Kgs": 3.00, "10 Kgs": 4.00, "15 Kgs": 3.70 } },
+    { size: 50, rates: { "6 Kgs": 4.00, "10 Kgs": 6.00, "15 Kgs": 4.95, "S-Bend": 8.00 } },
+    { size: 63, rates: { "4 Kgs": 6.50, "6 Kgs": 7.00, "S-Bend": 9.00 } },
+    { size: 75, rates: { "4 Kgs": 7.50, "6 Kgs": 8.60, "S-Bend": 10.00 } },
+    { size: 90, rates: { "4 Kgs": 9.50, "6 Kgs": 11.50, "S-Bend": 13.00 } },
+    { size: 110, rates: { "4 Kgs": 13.50, "6 Kgs": 15.00, "S-Bend": 17.00 } },
+    { size: 140, rates: { "4 Kgs": 65.00, "6 Kgs": 80.00, "S-Bend": 115.00 } },
+    { size: 160, rates: { "4 Kgs": 100.00, "6 Kgs": 115.00, "S-Bend": 172.50 } },
+    { size: 180, rates: { "4 Kgs": 170.00, "6 Kgs": 195.50 } },
+    { size: 200, rates: { "4 Kgs": 220.00, "6 Kgs": 245.50 } }
+  ],
+  coupler: [
+    { size: 20, rates: { "15 Kgs": 1.00 } },
+    { size: 25, rates: { "10 Kgs": 1.15, "15 Kgs": 1.30 } },
+    { size: 32, rates: { "10 Kgs": 1.40, "15 Kgs": 1.50 } },
+    { size: 40, rates: { "6 Kgs": 2.00, "10 Kgs": 2.30, "15 Kgs": 2.35 } },
+    { size: 50, rates: { "6 Kgs": 2.30, "10 Kgs": 2.50 } },
+    { size: 63, rates: { "4 Kgs": 3.00, "6 Kgs": 3.45 } },
+    { size: 75, rates: { "4 Kgs": 3.45, "6 Kgs": 4.00 } },
+    { size: 90, rates: { "4 Kgs": 4.50, "6 Kgs": 5.20 } },
+    { size: 110, rates: { "4 Kgs": 5.20, "6 Kgs": 6.30 } },
+    { size: 140, rates: { "4 Kgs": 8.60, "6 Kgs": 9.00 } },
+    { size: 160, rates: { "4 Kgs": 11.50, "6 Kgs": 12.65 } }
+  ],
+  jet: [
+    { name: "50*6", rate: 30 },
+    { name: "50*15", rate: 35 },
+    { name: "50*32", rate: 45 },
+    { name: "50*40", rate: 55 },
+    { name: "63*6", rate: 45 },
+    { name: "63*15", rate: 55 }
+  ]
+};
 
-        const PRODUCT_DATA = {
-            pipes: [
-                { size: 20, rates: { "15 Kgs": 1.40 } },
-                { size: 25, rates: { "10 Kgs": 1.50, "15 Kgs": 2.00 } },
-                { size: 32, rates: { "10 Kgs": 2.50, "15 Kgs": 2.80 } },
-                { size: 40, rates: { "6 Kgs": 3.00, "10 Kgs": 4.00, "15 Kgs": 3.70 } },
-                { size: 50, rates: { "6 Kgs": 4.00, "10 Kgs": 6.00, "15 Kgs": 4.95, "S-Bend": 8.00 } },
-                { size: 63, rates: { "4 Kgs": 6.50, "6 Kgs": 7.00, "S-Bend": 9.00 } },
-                { size: 75, rates: { "4 Kgs": 7.50, "6 Kgs": 8.60, "S-Bend": 10.00 } },
-                { size: 90, rates: { "4 Kgs": 9.50, "6 Kgs": 11.50, "S-Bend": 13.00 } },
-                { size: 110, rates: { "4 Kgs": 13.50, "6 Kgs": 15.00, "S-Bend": 17.00 } },
-                { size: 140, rates: { "4 Kgs": 65.00, "6 Kgs": 80.00, "S-Bend": 115.00 } },
-                { size: 160, rates: { "4 Kgs": 100.00, "6 Kgs": 115.00, "S-Bend": 172.50 } },
-                { size: 180, rates: { "4 Kgs": 170.00, "6 Kgs": 195.50 } },
-                { size: 200, rates: { "4 Kgs": 220.00, "6 Kgs": 245.50 } },
-            ],
-            coupler: [
-                { size: 20, rates: { "15 Kgs": 1.00 } },
-                { size: 25, rates: { "10 Kgs": 1.15, "15 Kgs": 1.30 } },
-                { size: 32, rates: { "10 Kgs": 1.40, "15 Kgs": 1.50 } },
-                { size: 40, rates: { "6 Kgs": 2.00, "10 Kgs": 2.30, "15 Kgs": 2.35 } },
-                { size: 50, rates: { "6 Kgs": 2.30, "10 Kgs": 2.50 } },
-                { size: 63, rates: { "4 Kgs": 3.00, "6 Kgs": 3.45 } },
-                { size: 75, rates: { "4 Kgs": 3.45, "6 Kgs": 4.00 } },
-                { size: 90, rates: { "4 Kgs": 4.50, "6 Kgs": 5.20 } },
-                { size: 110, rates: { "4 Kgs": 5.20, "6 Kgs": 6.30 } },
-                { size: 140, rates: { "4 Kgs": 8.60, "6 Kgs": 9.00 } },
-                { size: 160, rates: { "4 Kgs": 11.50, "6 Kgs": 12.65 } },
-            ],
-            jetFootvale: [
-                { name: "50*6", rate: 30.00 }, { name: "50*15", rate: 35.00 },
-                { name: "50*32", rate: 45.00 }, { name: "50*40", rate: 55.00 },
-                { name: "63*6", rate: 45.00 }, { name: "63*15", rate: 55.00 },
-            ],
-        };
+function App() {
+  const [cart, setCart] = useState([]);
+  const [customer, setCustomer] = useState("");
+  const [history, setHistory] = useState([]);
+  const [billNo, setBillNo] = useState(1001);
 
-        const TRANSLATIONS = {
-            en: {
-                title: "SRI VINAYAGA LABER WORKS",
-                subtitle: "SRI PACHAIAMMAN THUNAI",
-                address: "SINTHAN NAGAR, KRISHNAMPALAYAM, ERODE - 03",
-                contacts: "CELL: 9095786363, 8015767107",
-                bend: "BEND", coupler: "COUPLER", jet: "JET FOOTVALE",
-                add: "Add to Cart", total: "Total", whatsapp: "WhatsApp Bill",
-                pdf: "Download PDF", name: "Customer Name",
-                viewBill: "Review Bill", empty: "No items in cart",
-                size: "Size (mm)", type: "Type",
-                success: "Bill Generated & Saved!",
-                history: "Order History",
-                passcode: "Enter Owner Passcode",
-                newBill: "New Bill"
-            },
-            ta: {
-                title: "ஸ்ரீ விநாயகா லேபர் ஒர்க்ஸ்",
-                subtitle: "ஸ்ரீ பச்சையம்மன் துணை",
-                address: "சிந்தன் நகர், கிருஷ்ணம்பாளையம், ஈரோடு - 03",
-                contacts: "செல்: 9095786363, 8015767107",
-                bend: "பெண்ட் (BEND)", coupler: "கப்ளர் (COUPLER)", jet: "ஜெட் (JET)",
-                add: "சேர்க்க", total: "மொத்தம்", whatsapp: "வாட்ஸ்அப் பில்",
-                pdf: "பதிவிறக்கம் (PDF)", name: "வாடிக்கையாளர் பெயர்",
-                viewBill: "பில் பார்க்க", empty: "பட்டியல் காலியாக உள்ளது",
-                size: "அளவு", type: "வகை",
-                success: "பில் சேமிக்கப்பட்டது!",
-                history: "பழைய ஆர்டர்கள்",
-                passcode: "கடவுச்சொல்லை உள்ளிடவும்",
-                newBill: "புதிய பில்"
-            }
-        };
+  const [ownerMode, setOwnerMode] = useState(false);
+  const [password, setPassword] = useState("");
 
-        const Icon = ({ name, className = "w-5 h-5" }) => {
-            const icons = {
-                whatsapp: <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-11.7 8.38 8.38 0 0 1 3.8.9L21 3zM17 15.5c-.2-.4-.8-.6-1.6-.9-.8-.4-1.1-.6-1.3-.8-.2-.2-.3-.5-.1-.8s.6-.8.8-1c.2-.2.3-.5.1-.8-.2-.3-.8-1.9-1.1-2.5-.3-.6-.6-.5-.8-.5H13c-.2 0-.6.1-.9.5-.3.4-1.1 1.1-1.1 2.6s1.1 3 1.2 3.2c.1.2 2.2 3.4 5.4 4.7.7.3 1.3.5 1.8.7.8.2 1.5.2 2 .1.6-.1 1.7-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.1-.3-.2-.5-.3z" />,
-                plus: <path d="M12 5v14M5 12h14" />,
-                close: <path d="M18 6 6 18M6 6l12 12" />,
-                file: <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />,
-                trash: <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />,
-                check: <path d="M20 6 9 17l-5-5" />,
-                user: <React.Fragment><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></React.Fragment>,
-                chevronRight: <path d="m9 18 6-6-6-6" />,
-                key: <path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.778-7.778zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3-3.5 3.5z" />,
-                download: <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m4-5 5 5 5-5m-5 5V3"/>
-            };
-            return (
-                <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    {icons[name]}
-                </svg>
-            );
-        };
+  const addItem = (name, rate) => {
+    setCart(c => [...c, { name, rate }]);
+  };
 
-        function App() {
-            const [fbReady, setFbReady] = useState(!!window.Firebase);
-            const [user, setUser] = useState(null);
-            const [lang, setLang] = useState('ta');
-            const [cart, setCart] = useState([]);
-            const [customerName, setCustomerName] = useState('');
-            const [showModal, setShowModal] = useState(false);
-            const [isBillGenerated, setIsBillGenerated] = useState(false);
-            const [billNo, setBillNo] = useState(() => Math.floor(1000 + Math.random() * 9000));
-            const [showDashboard, setShowDashboard] = useState(false);
-            const [showPasscodeScreen, setShowPasscodeScreen] = useState(false);
-            const [passcodeInput, setPasscodeInput] = useState('');
-            const [orders, setOrders] = useState([]);
-            
-            const [pS, setPS] = useState(20); 
-            const [pW, setPW] = useState("15 Kgs");
-            const [cS, setCS] = useState(20); 
-            const [cW, setCW] = useState("15 Kgs");
-            const [jN, setJN] = useState(PRODUCT_DATA.jetFootvale[0].name);
+  const total = useMemo(() =>
+    cart.reduce((s,i)=>s+i.rate,0), [cart]);
 
-            const T = TRANSLATIONS[lang];
-            const OWNER_PASSCODE = "1234";
-            const TARGET_WHATSAPP = "8643861100";
+  const generateBill = () => {
+    if (!customer || cart.length === 0) return;
 
-            // Wait for Firebase to be ready before initializing auth
-            useEffect(() => {
-                const handleReady = () => setFbReady(true);
-                window.addEventListener('firebase-ready', handleReady);
-                return () => window.removeEventListener('firebase-ready', handleReady);
-            }, []);
+    const bill = {
+      billNo,
+      customer,
+      items: cart,
+      total,
+      date: new Date().toLocaleString()
+    };
 
-            useEffect(() => {
-                if (!fbReady) return;
-                const { auth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = window.Firebase;
-                
-                const initAuth = async () => {
-                    try {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    } catch (e) { console.error("Auth init error:", e); }
-                };
-                initAuth();
-                return onAuthStateChanged(auth, setUser);
-            }, [fbReady]);
+    setHistory(h => [bill, ...h]);
+    setBillNo(billNo + 1);
 
-            useEffect(() => {
-                if (!user || !showDashboard) return;
-                const { db, appId, collection, query, onSnapshot } = window.Firebase;
-                const q = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
-                return onSnapshot(q, (snapshot) => {
-                    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    setOrders(data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
-                }, (err) => console.error("Firestore error:", err));
-            }, [user, showDashboard]);
+    sendWhatsApp(bill);
+    downloadPDF(bill);
 
-            const addToCart = (id, labelEn, labelTa, rate) => {
-                if (!rate) return;
-                setCart(prev => {
-                    const exists = prev.find(i => i.id === id);
-                    if (exists) return prev.map(i => i.id === id ? {...i, qty: i.qty + 1} : i);
-                    return [...prev, { id, labelEn, labelTa, rate, qty: 1 }];
-                });
-            };
+    setCart([]);
+    setCustomer("");
+  };
 
-            const grandTotal = useMemo(() => cart.reduce((a, b) => a + (b.rate * b.qty), 0), [cart]);
+  const sendWhatsApp = (bill) => {
+    const msg =
+`SRI VINAYAGA LABER WORKS
+SINTHAN NAGAR, KRISHNAMPALAYAM, ERODE - 03
 
-            const handleFinalizeBill = async () => {
-                if (!customerName.trim() || !user) return;
-                const { db, appId, collection, addDoc, Timestamp } = window.Firebase;
-                try {
-                    const orderData = {
-                        billNo,
-                        customerName: customerName.trim(),
-                        items: cart,
-                        total: grandTotal,
-                        createdAt: Timestamp.now()
-                    };
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'orders'), orderData);
-                    setIsBillGenerated(true);
-                } catch (e) { console.error("Finalize error:", e); }
-            };
+Bill No: ${bill.billNo}
+Customer: ${bill.customer}
 
-            const sendWhatsApp = () => {
-                const date = new Date().toLocaleDateString('en-IN');
-                const msg = `*${T.title}*\n_${T.address}_\n--------------------------\n*Bill No:* #${billNo}\n*Date:* ${date}\n*Customer:* ${customerName.trim()}\n--------------------------\n${cart.map(i => `• ${lang==='en'?i.labelEn:i.labelTa}\n  ${i.qty} x ₹${i.rate.toFixed(2)} = *₹${(i.rate*i.qty).toFixed(2)}*`).join('\n\n')}\n--------------------------\n*TOTAL: ₹${grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n--------------------------\n_Thank you!_`;
-                const whatsappUrl = `https://wa.me/91${TARGET_WHATSAPP}?text=${encodeURIComponent(msg)}`;
-                window.open(whatsappUrl, '_blank');
-            };
+${bill.items.map(i=>`• ${i.name} - ₹${i.rate}`).join("\n")}
 
-            const downloadPDF = () => {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                const date = new Date().toLocaleDateString('en-IN');
-                
-                doc.setFontSize(20); doc.setFont("helvetica", "bold");
-                doc.text(T.title, 105, 20, { align: "center" });
-                doc.setFontSize(10); doc.setFont("helvetica", "normal");
-                doc.text(T.subtitle, 105, 26, { align: "center" });
-                doc.text(T.address, 105, 31, { align: "center" });
-                doc.text(T.contacts, 105, 36, { align: "center" });
-                doc.line(10, 42, 200, 42);
-                
-                doc.setFontSize(12); doc.setFont("helvetica", "bold");
-                doc.text(`Bill No: #${billNo}`, 10, 52);
-                doc.text(`Date: ${date}`, 200, 52, { align: "right" });
-                doc.text(`Customer: ${customerName.trim()}`, 10, 60);
-                
-                const tableData = cart.map(i => [
-                    lang === 'en' ? i.labelEn : i.labelTa,
-                    i.qty.toString(),
-                    `₹${i.rate.toFixed(2)}`,
-                    `₹${(i.rate * i.qty).toFixed(2)}`
-                ]);
-                
-                doc.autoTable({
-                    startY: 70,
-                    head: [['Description', 'Qty', 'Rate', 'Total']],
-                    body: tableData,
-                    theme: 'striped',
-                    headStyles: { fillColor: [0, 0, 0] }
-                });
-                
-                const finalY = doc.lastAutoTable.finalY + 10;
-                doc.setFontSize(14); doc.setFont("helvetica", "bold");
-                doc.text(`GRAND TOTAL: ₹${grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 200, finalY, { align: "right" });
-                
-                doc.save(`Bill_${billNo}_${customerName.trim()}.pdf`);
-            };
+TOTAL: ₹${bill.total}`;
+    window.open(`https://wa.me/${WHATSAPP_NO}?text=${encodeURIComponent(msg)}`);
+  };
 
-            const resetApp = () => {
-                setBillNo(Math.floor(1000 + Math.random() * 9000));
-                setCart([]); setCustomerName(''); setShowModal(false); setIsBillGenerated(false);
-            };
+  const downloadPDF = (bill) => {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.text("SRI VINAYAGA LABER WORKS", 14, 15);
+    doc.text(`Bill No: ${bill.billNo}`, 14, 22);
+    doc.text(`Customer: ${bill.customer}`, 14, 28);
+    doc.autoTable({
+      startY: 36,
+      head: [["Item","Rate"]],
+      body: bill.items.map(i=>[i.name, i.rate])
+    });
+    doc.text(`Total: ₹${bill.total}`, 14, doc.lastAutoTable.finalY + 10);
+    doc.save(`Bill_${bill.billNo}.pdf`);
+  };
 
-            if (!fbReady) {
-                return <div className="min-h-screen flex items-center justify-center bg-slate-50 font-black text-slate-400 animate-pulse">LOADING...</div>;
-            }
+  return (
+    <div className="max-w-md mx-auto p-4 space-y-4">
 
-            return (
-                <div className="min-h-screen bg-slate-50 pb-36 relative overflow-x-hidden">
-                    <header className="bg-yellow-400 p-6 pt-8 text-center shadow-lg sticky top-0 z-30 rounded-b-[2.5rem]">
-                        <button onClick={() => setLang(l => l === 'en' ? 'ta' : 'en')} className="absolute right-6 top-8 bg-black text-white p-2 px-4 rounded-full text-[10px] font-black uppercase tracking-widest tap-scale">
-                            {lang === 'en' ? 'தமிழ்' : 'English'}
-                        </button>
-                        <div className="opacity-80 text-[10px] font-black uppercase tracking-widest mb-1 text-slate-800">{T.subtitle}</div>
-                        <h1 className="text-2xl font-black mb-1 leading-tight tracking-tight text-slate-900">{T.title}</h1>
-                        <p className="text-[9px] font-bold leading-tight opacity-70 max-w-[200px] mx-auto uppercase mb-4">{T.address}</p>
-                        <div className="bg-black/5 rounded-2xl p-2 inline-flex items-center gap-2">
-                             <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                             <span className="text-[10px] font-black tracking-wider uppercase text-slate-700">{T.contacts}</span>
-                        </div>
-                    </header>
+      {/* HEADER */}
+      <div className="bg-yellow-400 p-4 rounded-xl text-center font-black">
+        SRI VINAYAGA LABER WORKS
+        <div className="text-xs font-normal">
+          SINTHAN NAGAR, KRISHNAMPALAYAM, ERODE - 03<br/>
+          CELL: 9095786363, 8015767107
+        </div>
+      </div>
 
-                    <main className="p-5 space-y-6 max-w-lg mx-auto">
-                        {/* BEND SECTION */}
-                        <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
-                            <h2 className="text-[11px] font-black text-slate-400 mb-5 uppercase tracking-[0.2em]">{T.bend}</h2>
-                            <div className="grid grid-cols-2 gap-4 mb-5">
-                                <select className="bg-slate-100 p-4 rounded-2xl font-bold text-sm outline-none" value={pS} onChange={e => setPS(Number(e.target.value))}>
-                                    {PRODUCT_DATA.pipes.map(p => <option key={p.size} value={p.size}>{p.size}mm</option>)}
-                                </select>
-                                <select className="bg-slate-100 p-4 rounded-2xl font-bold text-sm outline-none" value={pW} onChange={e => setPW(e.target.value)}>
-                                    {Object.keys(PRODUCT_DATA.pipes.find(d => d.size === pS).rates).map(r => <option key={r} value={r}>{r}</option>)}
-                                </select>
-                            </div>
-                            <button onClick={() => addToCart(`bend-${pS}-${pW}`, `${pS}mm Bend ${pW}`, `${pS}மிமீ பெண்ட் ${pW}`, PRODUCT_DATA.pipes.find(p=>p.size===pS)?.rates[pW])} className="w-full bg-yellow-400 p-5 rounded-3xl font-black text-sm flex items-center justify-center gap-3 tap-scale shadow-lg">
-                                <span className="bg-black/10 px-4 py-1.5 rounded-xl">₹{PRODUCT_DATA.pipes.find(p=>p.size===pS)?.rates[pW]?.toFixed(2)}</span>
-                                {T.add}
-                                <Icon name="plus" className="w-4 h-4" />
-                            </button>
-                        </div>
+      {/* OWNER LOGIN */}
+      {!ownerMode && (
+        <div className="bg-white p-4 rounded-xl">
+          <input type="password" placeholder="Owner Password"
+            value={password} onChange={e=>setPassword(e.target.value)} />
+          <button className="bg-black text-white w-full p-2"
+            onClick={()=>password===OWNER_PASSWORD && setOwnerMode(true)}>
+            Owner Login
+          </button>
+        </div>
+      )}
 
-                        {/* COUPLER SECTION */}
-                        <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
-                            <h2 className="text-[11px] font-black text-slate-400 mb-5 uppercase tracking-[0.2em]">{T.coupler}</h2>
-                            <div className="grid grid-cols-2 gap-4 mb-5">
-                                <select className="bg-slate-100 p-4 rounded-2xl font-bold text-sm outline-none" value={cS} onChange={e => setCS(Number(e.target.value))}>
-                                    {PRODUCT_DATA.coupler.map(p => <option key={p.size} value={p.size}>{p.size}mm</option>)}
-                                </select>
-                                <select className="bg-slate-100 p-4 rounded-2xl font-bold text-sm outline-none" value={cW} onChange={e => setCW(e.target.value)}>
-                                    {Object.keys(PRODUCT_DATA.coupler.find(d => d.size === cS).rates).map(r => <option key={r} value={r}>{r}</option>)}
-                                </select>
-                            </div>
-                            <button onClick={() => addToCart(`coupler-${cS}-${cW}`, `${cS}mm Coupler ${cW}`, `${cS}மிமீ கப்ளர் ${cW}`, PRODUCT_DATA.coupler.find(p=>p.size===cS)?.rates[cW])} className="w-full bg-blue-600 text-white p-5 rounded-3xl font-black text-sm flex items-center justify-center gap-3 tap-scale shadow-lg">
-                                <span className="bg-white/10 px-4 py-1.5 rounded-xl">₹{PRODUCT_DATA.coupler.find(p=>p.size===cS)?.rates[cW]?.toFixed(2)}</span>
-                                {T.add}
-                                <Icon name="plus" className="w-4 h-4" />
-                            </button>
-                        </div>
+      {/* OWNER HISTORY */}
+      {ownerMode && (
+        <div className="bg-white p-4 rounded-xl">
+          <h3 className="font-black mb-2">Order History</h3>
+          {history.length===0 && <p className="text-sm">No bills yet</p>}
+          {history.map(b=>(
+            <div key={b.billNo} className="border-b py-1 text-sm">
+              #{b.billNo} | {b.customer} | ₹{b.total}
+            </div>
+          ))}
+        </div>
+      )}
 
-                        {/* JET SECTION */}
-                        <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200">
-                            <h2 className="text-[11px] font-black text-slate-400 mb-5 uppercase tracking-[0.2em]">{T.jet}</h2>
-                            <select className="w-full bg-slate-100 p-4 rounded-2xl font-bold text-sm outline-none mb-5" value={jN} onChange={e => setJN(e.target.value)}>
-                                {PRODUCT_DATA.jetFootvale.map(j => <option key={j.name} value={j.name}>{j.name}</option>)}
-                            </select>
-                            <button onClick={() => addToCart(`jet-${jN}`, `Jet ${jN}`, `ஜெட் ${jN}`, PRODUCT_DATA.jetFootvale.find(j=>j.name===jN)?.rate)} className="w-full bg-slate-900 text-white p-5 rounded-3xl font-black text-sm flex items-center justify-center gap-3 tap-scale">
-                                <span className="bg-white/10 px-4 py-1.5 rounded-xl">₹{PRODUCT_DATA.jetFootvale.find(j=>j.name===jN)?.rate?.toFixed(2)}</span>
-                                {T.add}
-                                <Icon name="plus" className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </main>
+      {/* CUSTOMER */}
+      <input placeholder="Customer Name"
+        value={customer} onChange={e=>setCustomer(e.target.value)} />
 
-                    {/* ACTIONS BAR */}
-                    {cart.length > 0 && !showModal && (
-                        <div className="fixed bottom-8 left-6 right-6 z-40">
-                            <button onClick={() => setShowModal(true)} className="w-full bg-slate-900 text-white p-5 rounded-full shadow-2xl flex justify-between items-center px-8 border-4 border-yellow-400 tap-scale">
-                                <div className="text-left">
-                                    <p className="text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-1">{T.total}</p>
-                                    <p className="font-black text-xl">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
-                                </div>
-                                <div className="flex items-center gap-3 bg-yellow-400 text-slate-900 px-6 py-3 rounded-full font-black text-[11px] uppercase tracking-widest">
-                                    {T.viewBill}
-                                    <Icon name="chevronRight" className="w-4 h-4" />
-                                </div>
-                            </button>
-                        </div>
-                    )}
+      {/* PRODUCTS */}
+      <h3 className="font-black">BEND</h3>
+      {PRODUCTS.bend.map(b =>
+        Object.entries(b.rates).map(([w,r])=>(
+          <button key={b.size+w}
+            className="bg-white w-full p-2 mb-1"
+            onClick={()=>addItem(`${b.size}mm Bend ${w}`, r)}>
+            {b.size}mm Bend {w} – ₹{r}
+          </button>
+        ))
+      )}
 
-                    {/* CHECKOUT MODAL */}
-                    {showModal && (
-                        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 flex items-end justify-center">
-                            <div className="bg-white w-full max-w-md rounded-t-[3rem] p-8 pb-12 space-y-6 shadow-2xl animate-slide-up max-h-[95vh] overflow-y-auto">
-                                <div className="flex justify-between items-center border-b pb-4">
-                                    <h3 className="font-black text-2xl tracking-tight">Checkout</h3>
-                                    <button onClick={() => setShowModal(false)} className="bg-slate-100 p-3 rounded-full"><Icon name="close" /></button>
-                                </div>
+      <h3 className="font-black">COUPLER</h3>
+      {PRODUCTS.coupler.map(c =>
+        Object.entries(c.rates).map(([w,r])=>(
+          <button key={c.size+w}
+            className="bg-white w-full p-2 mb-1"
+            onClick={()=>addItem(`${c.size}mm Coupler ${w}`, r)}>
+            {c.size}mm Coupler {w} – ₹{r}
+          </button>
+        ))
+      )}
 
-                                <div className="space-y-3">
-                                    {cart.map(i => (
-                                        <div key={i.id} className="flex justify-between items-center p-4 bg-slate-50 rounded-3xl">
-                                            <div>
-                                                <p className="text-[12px] font-black">{lang === 'en' ? i.labelEn : i.labelTa}</p>
-                                                <p className="text-[10px] font-bold text-slate-400">{i.qty} x ₹{i.rate.toFixed(2)}</p>
-                                            </div>
-                                            <span className="font-black">₹{(i.rate * i.qty).toFixed(2)}</span>
-                                        </div>
-                                    ))}
-                                </div>
+      <h3 className="font-black">JET FOOT VALVE</h3>
+      {PRODUCTS.jet.map(j=>(
+        <button key={j.name}
+          className="bg-white w-full p-2 mb-1"
+          onClick={()=>addItem(`Jet ${j.name}`, j.rate)}>
+          Jet {j.name} – ₹{j.rate}
+        </button>
+      ))}
 
-                                <div className="bg-slate-50 p-6 rounded-[2.5rem] border">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase">Subtotal</span>
-                                        <span className="text-2xl font-black">₹{grandTotal.toLocaleString()}</span>
-                                    </div>
-                                    <input className="w-full bg-white p-4 rounded-2xl font-bold border-2 focus:border-yellow-400 outline-none" placeholder="Customer Name" value={customerName} onChange={e => setCustomerName(e.target.value)} disabled={isBillGenerated} />
-                                </div>
+      {/* CART */}
+      <div className="bg-white p-4 rounded-xl">
+        {cart.map((i,idx)=>(
+          <div key={idx} className="flex justify-between">
+            <span>{i.name}</span>
+            <span>₹{i.rate}</span>
+          </div>
+        ))}
+        <div className="font-black text-right mt-2">
+          Total ₹{total}
+        </div>
+      </div>
 
-                                {!isBillGenerated ? (
-                                    <button disabled={!customerName.trim()} onClick={handleFinalizeBill} className="w-full bg-slate-900 text-white p-6 rounded-3xl font-black flex items-center justify-center gap-3 tap-scale">
-                                        <Icon name="check" /> Finalize Bill
-                                    </button>
-                                ) : (
-                                    <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <button onClick={sendWhatsApp} className="bg-[#25D366] text-white p-5 rounded-3xl font-black flex flex-col items-center gap-1 tap-scale">
-                                                <Icon name="whatsapp" /> <span className="text-[10px] uppercase">WhatsApp</span>
-                                            </button>
-                                            <button onClick={downloadPDF} className="bg-blue-500 text-white p-5 rounded-3xl font-black flex flex-col items-center gap-1 tap-scale">
-                                                <Icon name="download" /> <span className="text-[10px] uppercase">PDF</span>
-                                            </button>
-                                        </div>
-                                        <button onClick={resetApp} className="w-full bg-slate-900 text-white p-5 rounded-3xl font-black uppercase text-[10px] tracking-widest">{T.newBill}</button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
+      <button onClick={generateBill}
+        className="bg-green-600 text-white w-full p-3 rounded-xl">
+        Generate Bill
+      </button>
 
-                    {/* Hidden Admin Key */}
-                    <div className="fixed bottom-4 left-6 z-40 opacity-20">
-                        <button onClick={() => setShowPasscodeScreen(true)} className="p-3 bg-slate-200 rounded-full"><Icon name="key" className="w-3 h-3" /></button>
-                    </div>
+    </div>
+  );
+}
 
-                    {/* PASSCODE SCREEN */}
-                    {showPasscodeScreen && (
-                        <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-[100] flex items-center justify-center p-6">
-                            <div className="bg-white p-8 rounded-[3rem] w-full max-w-xs text-center space-y-6">
-                                <h3 className="font-black text-lg uppercase tracking-wider">{T.passcode}</h3>
-                                <input type="password" className="w-full bg-slate-100 p-5 rounded-3xl text-center text-2xl tracking-[0.5em] font-black outline-none" maxLength={4} autoFocus value={passcodeInput} onChange={e => setPasscodeInput(e.target.value)} placeholder="••••" />
-                                <div className="flex gap-2">
-                                    <button onClick={() => setShowPasscodeScreen(false)} className="flex-1 bg-slate-100 p-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest">Cancel</button>
-                                    <button onClick={() => { if(passcodeInput === OWNER_PASSCODE) { setShowPasscodeScreen(false); setShowDashboard(true); } setPasscodeInput(''); }} className="flex-1 bg-yellow-400 p-4 rounded-2xl font-black uppercase text-[10px] tracking-widest">Open</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* DASHBOARD */}
-                    {showDashboard && (
-                        <div className="fixed inset-0 bg-slate-50 z-[90] flex flex-col pt-4">
-                            <header className="px-6 flex justify-between items-center mb-4">
-                                <h2 className="text-2xl font-black uppercase tracking-tight">{T.history}</h2>
-                                <button onClick={() => setShowDashboard(false)} className="bg-white p-4 rounded-full shadow-sm"><Icon name="close" /></button>
-                            </header>
-                            <div className="flex-1 overflow-y-auto px-6 space-y-4 pb-10">
-                                {orders.map(order => (
-                                    <div key={order.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-200">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <p className="text-[10px] font-black text-slate-400">#{order.billNo}</p>
-                                                <h4 className="font-black text-lg uppercase">{order.customerName}</h4>
-                                            </div>
-                                            <button onClick={() => window.Firebase.deleteDoc(window.Firebase.doc(window.Firebase.db, 'artifacts', window.Firebase.appId, 'public', 'data', 'orders', order.id))} className="text-red-400 p-2"><Icon name="trash" /></button>
-                                        </div>
-                                        <div className="mt-4 pt-4 border-t flex justify-between font-black">
-                                            <span className="text-slate-400 text-[10px] uppercase">Total</span>
-                                            <span className="text-xl">₹{order.total.toLocaleString()}</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
-        }
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
 </body>
 </html>
