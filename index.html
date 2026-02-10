@@ -14,8 +14,17 @@
 
 <style>
 body { font-family: system-ui; background:#f8fafc; }
-select, input { width:100%; padding:10px; border-radius:10px; margin-bottom:8px; }
-button { border-radius:12px; }
+select, input { width:100%; padding:12px; border-radius:10px; margin-bottom:8px; border:1px solid #ddd; font-size:16px; }
+button { border-radius:12px; font-size:16px; }
+.hidden-login { position: absolute; top: 10px; right: 10px; opacity: 0.1; cursor: pointer; font-size: 12px; }
+.product-card { transition: all 0.3s ease; }
+.quantity-input { width: 70px; text-align: center; padding: 8px; border-radius: 8px; border: 2px solid #e5e7eb; }
+.cart-item { animation: slideIn 0.3s ease; }
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.tamil-text { font-family: 'Arial Unicode MS', 'TAMu_Kadambri', 'Latha', sans-serif; }
 </style>
 </head>
 
@@ -23,13 +32,13 @@ button { border-radius:12px; }
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useMemo } = React;
+const { useState, useMemo, useEffect } = React;
 
 /* 🔐 OWNER */
 const OWNER_PASSWORD = "6363";
 const WHATSAPP_NO = "918643861100";
 
-/* 📦 PRODUCTS (EXACT FROM EXCEL – UNCHANGED) */
+/* 📦 PRODUCTS */
 const PRODUCTS = {
   bend: [
     { size: 20, rates: { "15 Kgs": 1.40 } },
@@ -69,162 +78,757 @@ const PRODUCTS = {
   ]
 };
 
+/* 🌐 TRANSLATIONS */
+const TRANSLATIONS = {
+  en: {
+    title: "SRI VINAYAGA LABER WORKS",
+    address: "Sinthan Nagar, Krishnampalayam, Erode - 03",
+    phone: "Cell: 9095786363, 8015767107",
+    customerName: "Customer Name",
+    customerPlaceholder: "Enter customer name",
+    bend: "BEND",
+    coupler: "COUPLER",
+    jetValve: "JET VALVE",
+    search: "Search...",
+    addToCart: "Add to Cart",
+    cart: "Cart",
+    items: "items",
+    total: "Total",
+    generateBill: "Generate Bill",
+    enterCustomerName: "Enter Customer Name",
+    addItems: "Add Items to Cart",
+    ownerLogin: "Owner Login",
+    orderHistory: "Order History",
+    logout: "Logout",
+    noBills: "No bills yet",
+    billGenerated: "Bill Generated!",
+    sendWhatsAppPDF: "Send WhatsApp & Download PDF",
+    sendWhatsApp: "Send via WhatsApp",
+    downloadPDF: "Download PDF",
+    doneNewBill: "Done & New Bill",
+    thankYou: "Thank you for your business!",
+    quantity: "Qty",
+    rate: "Rate",
+    amount: "Amount",
+    subtotal: "Subtotal",
+    each: "each",
+    clearAll: "Clear All",
+    qtyPlaceholder: "Qty"
+  },
+  ta: {
+    title: "ஸ்ரீ விநாயக லேபர் வொர்க்ஸ்",
+    address: "சிந்தன் நகர், கிருஷ்ணம்பாளையம், ஈரோடு - 03",
+    phone: "தொலைபேசி: 9095786363, 8015767107",
+    customerName: "வாடிக்கையாளர் பெயர்",
+    customerPlaceholder: "வாடிக்கையாளர் பெயரை உள்ளிடவும்",
+    bend: "பெண்ட்",
+    coupler: "கப்லர்",
+    jetValve: "ஜெட் வால்வ்",
+    search: "தேடு...",
+    addToCart: "கார்ட்டில் சேர்க்கவும்",
+    cart: "கார்ட்",
+    items: "பொருட்கள்",
+    total: "மொத்தம்",
+    generateBill: "பில் உருவாக்கு",
+    enterCustomerName: "வாடிக்கையாளர் பெயரை உள்ளிடவும்",
+    addItems: "கார்ட்டில் பொருட்களை சேர்க்கவும்",
+    ownerLogin: "உரிமையாளர் உள்நுழைவு",
+    orderHistory: "ஆர்டர் வரலாறு",
+    logout: "வெளியேறு",
+    noBills: "இன்னும் பில்ல்கள் இல்லை",
+    billGenerated: "பில் உருவாக்கப்பட்டது!",
+    sendWhatsAppPDF: "WhatsApp அனுப்பு & PDF பதிவிறக்கு",
+    sendWhatsApp: "WhatsApp மூலம் அனுப்பு",
+    downloadPDF: "PDF பதிவிறக்கு",
+    doneNewBill: "முடிந்தது & புதிய பில்",
+    thankYou: "உங்கள் வணிகத்திற்கு நன்றி!",
+    quantity: "அளவு",
+    rate: "விலை",
+    amount: "தொகை",
+    subtotal: "துணைத்தொகை",
+    each: "ஒவ்வொன்றும்",
+    clearAll: "அனைத்தும் அழி",
+    qtyPlaceholder: "அளவு"
+  }
+};
+
 function App() {
   const [cart, setCart] = useState([]);
   const [customer, setCustomer] = useState("");
   const [history, setHistory] = useState([]);
-  const [billNo, setBillNo] = useState(1001);
-
+  const [billNo, setBillNo] = useState(() => {
+    const saved = localStorage.getItem('billNo');
+    return saved ? parseInt(saved) : 1001;
+  });
   const [ownerMode, setOwnerMode] = useState(false);
   const [password, setPassword] = useState("");
+  const [showLogin, setShowLogin] = useState(false);
+  const [showBillOptions, setShowBillOptions] = useState(false);
+  const [currentBill, setCurrentBill] = useState(null);
+  const [activeCategory, setActiveCategory] = useState("bend");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [language, setLanguage] = useState("en");
+  const [productQuantities, setProductQuantities] = useState({});
 
-  const addItem = (name, rate) => {
-    setCart(c => [...c, { name, rate }]);
+  const t = TRANSLATIONS[language];
+
+  useEffect(() => {
+    localStorage.setItem('billNo', billNo);
+  }, [billNo]);
+
+  // Initialize quantities for all products
+  useEffect(() => {
+    const quantities = {};
+    
+    // Initialize bend products
+    PRODUCTS.bend.forEach(b => {
+      Object.keys(b.rates).forEach(weight => {
+        const key = `bend_${b.size}_${weight}`;
+        quantities[key] = "";
+      });
+    });
+    
+    // Initialize coupler products
+    PRODUCTS.coupler.forEach(c => {
+      Object.keys(c.rates).forEach(weight => {
+        const key = `coupler_${c.size}_${weight}`;
+        quantities[key] = "";
+      });
+    });
+    
+    // Initialize jet products
+    PRODUCTS.jet.forEach(j => {
+      const key = `jet_${j.name}`;
+      quantities[key] = "";
+    });
+    
+    setProductQuantities(quantities);
+  }, []);
+
+  const updateQuantity = (productKey, value) => {
+    // Only allow numbers and empty string
+    if (value === "" || /^\d+$/.test(value)) {
+      setProductQuantities(prev => ({
+        ...prev,
+        [productKey]: value
+      }));
+    }
   };
 
-  const total = useMemo(() =>
-    cart.reduce((s,i)=>s+i.rate,0), [cart]);
+  const addToCart = () => {
+    const newItems = [];
+    
+    // Process bend products
+    PRODUCTS.bend.forEach(b => {
+      Object.entries(b.rates).forEach(([weight, rate]) => {
+        const key = `bend_${b.size}_${weight}`;
+        const quantityStr = productQuantities[key] || "";
+        const quantity = parseInt(quantityStr) || 0;
+        
+        if (quantity > 0) {
+          newItems.push({ 
+            name: `${b.size}mm Bend ${weight}`, 
+            rate: rate,
+            quantity: quantity,
+            subtotal: rate * quantity,
+            category: 'bend',
+            productKey: key
+          });
+        }
+      });
+    });
+    
+    // Process coupler products
+    PRODUCTS.coupler.forEach(c => {
+      Object.entries(c.rates).forEach(([weight, rate]) => {
+        const key = `coupler_${c.size}_${weight}`;
+        const quantityStr = productQuantities[key] || "";
+        const quantity = parseInt(quantityStr) || 0;
+        
+        if (quantity > 0) {
+          newItems.push({ 
+            name: `${c.size}mm Coupler ${weight}`, 
+            rate: rate,
+            quantity: quantity,
+            subtotal: rate * quantity,
+            category: 'coupler',
+            productKey: key
+          });
+        }
+      });
+    });
+    
+    // Process jet products
+    PRODUCTS.jet.forEach(j => {
+      const key = `jet_${j.name}`;
+      const quantityStr = productQuantities[key] || "";
+      const quantity = parseInt(quantityStr) || 0;
+      
+      if (quantity > 0) {
+        newItems.push({ 
+          name: `Jet ${j.name}`, 
+          rate: j.rate,
+          quantity: quantity,
+          subtotal: j.rate * quantity,
+          category: 'jet',
+          productKey: key
+        });
+      }
+    });
+
+    if (newItems.length > 0) {
+      setCart(prev => [...prev, ...newItems]);
+      
+      // Clear the quantity fields for added products
+      const updatedQuantities = { ...productQuantities };
+      newItems.forEach(item => {
+        updatedQuantities[item.productKey] = "";
+      });
+      setProductQuantities(updatedQuantities);
+      
+      // Show success message
+      if (language === 'en') {
+        alert(`${newItems.length} items added to cart!`);
+      } else {
+        alert(`${newItems.length} பொருட்கள் கார்ட்டில் சேர்க்கப்பட்டன!`);
+      }
+    } else {
+      if (language === 'en') {
+        alert("Please enter quantities before adding to cart!");
+      } else {
+        alert("கார்ட்டில் சேர்க்க முன் அளவுகளை உள்ளிடவும்!");
+      }
+    }
+  };
+
+  const clearAllQuantities = () => {
+    const resetQuantities = { ...productQuantities };
+    Object.keys(resetQuantities).forEach(key => {
+      resetQuantities[key] = "";
+    });
+    setProductQuantities(resetQuantities);
+  };
+
+  const total = useMemo(() => 
+    cart.reduce((s, i) => s + (i.subtotal || i.rate), 0), [cart]);
 
   const generateBill = () => {
-    if (!customer || cart.length === 0) return;
+    if (!customer || cart.length === 0) {
+      if (language === 'en') {
+        alert("Please enter customer name and add items to cart!");
+      } else {
+        alert("வாடிக்கையாளர் பெயரை உள்ளிட்டு பொருட்களை கார்ட்டில் சேர்க்கவும்!");
+      }
+      return;
+    }
 
     const bill = {
       billNo,
       customer,
-      items: cart,
+      items: cart.map(item => ({
+        ...item,
+        subtotal: item.subtotal || item.rate
+      })),
       total,
       date: new Date().toLocaleString()
     };
 
     setHistory(h => [bill, ...h]);
-    setBillNo(billNo + 1);
-
-    sendWhatsApp(bill);
-    downloadPDF(bill);
-
-    setCart([]);
-    setCustomer("");
+    setCurrentBill(bill);
+    setShowBillOptions(true);
   };
 
   const sendWhatsApp = (bill) => {
-    const msg =
+    const itemsText = bill.items.map(i => {
+      if (i.quantity > 1) {
+        return `• ${i.name} (${i.quantity} x ₹${i.rate}) = ₹${i.subtotal}`;
+      }
+      return `• ${i.name} - ₹${i.rate}`;
+    }).join("\n");
+
+    const msg = 
 `SRI VINAYAGA LABER WORKS
 SINTHAN NAGAR, KRISHNAMPALAYAM, ERODE - 03
 
 Bill No: ${bill.billNo}
 Customer: ${bill.customer}
+Date: ${bill.date}
 
-${bill.items.map(i=>`• ${i.name} - ₹${i.rate}`).join("\n")}
+${itemsText}
 
 TOTAL: ₹${bill.total}`;
-    window.open(`https://wa.me/${WHATSAPP_NO}?text=${encodeURIComponent(msg)}`);
+    
+    window.open(`https://wa.me/${WHATSAPP_NO}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
   const downloadPDF = (bill) => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
+    
+    doc.setFontSize(18);
     doc.text("SRI VINAYAGA LABER WORKS", 14, 15);
-    doc.text(`Bill No: ${bill.billNo}`, 14, 22);
-    doc.text(`Customer: ${bill.customer}`, 14, 28);
+    doc.setFontSize(10);
+    doc.text("Sinthan Nagar, Krishnampalayam, Erode - 03", 14, 22);
+    doc.text("Cell: 9095786363, 8015767107", 14, 27);
+    
+    doc.setFontSize(12);
+    doc.text(`Bill No: ${bill.billNo}`, 14, 36);
+    doc.text(`Customer: ${bill.customer}`, 14, 42);
+    doc.text(`Date: ${bill.date.split(',')[0]}`, 140, 36);
+    
+    const tableData = bill.items.map(i => [
+      i.name,
+      i.quantity || 1,
+      `₹${i.rate}`,
+      `₹${i.subtotal || i.rate}`
+    ]);
+    
     doc.autoTable({
-      startY: 36,
-      head: [["Item","Rate"]],
-      body: bill.items.map(i=>[i.name, i.rate])
+      startY: 48,
+      head: [[t.item || "Item", t.quantity, t.rate, t.amount]],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: [34, 197, 94] }
     });
-    doc.text(`Total: ₹${bill.total}`, 14, doc.lastAutoTable.finalY + 10);
-    doc.save(`Bill_${bill.billNo}.pdf`);
+    
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(`${t.total} Amount: ₹${bill.total}`, 14, finalY);
+    
+    doc.setFontSize(10);
+    doc.text(t.thankYou, 14, finalY + 10);
+    
+    doc.save(`Bill_${bill.billNo}_${bill.customer}.pdf`);
   };
 
-  return (
-    <div className="max-w-md mx-auto p-4 space-y-4">
+  const handleSendWhatsApp = () => {
+    if (currentBill) {
+      sendWhatsApp(currentBill);
+    }
+  };
 
-      {/* HEADER */}
-      <div className="bg-yellow-400 p-4 rounded-xl text-center font-black">
-        SRI VINAYAGA LABER WORKS
-        <div className="text-xs font-normal">
-          SINTHAN NAGAR, KRISHNAMPALAYAM, ERODE - 03<br/>
-          CELL: 9095786363, 8015767107
-        </div>
+  const handleDownloadPDF = () => {
+    if (currentBill) {
+      downloadPDF(currentBill);
+    }
+  };
+
+  const handleBothActions = () => {
+    if (currentBill) {
+      downloadPDF(currentBill);
+      setTimeout(() => {
+        sendWhatsApp(currentBill);
+      }, 1000);
+    }
+  };
+
+  const completeBillProcess = () => {
+    setBillNo(billNo + 1);
+    setCart([]);
+    setCustomer("");
+    clearAllQuantities();
+    setCurrentBill(null);
+    setShowBillOptions(false);
+  };
+
+  const removeFromCart = (index) => {
+    setCart(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateCartQuantity = (index, value) => {
+    // Only allow numbers and empty string
+    if (value === "" || /^\d+$/.test(value)) {
+      const quantity = value === "" ? 0 : parseInt(value);
+      setCart(prev => {
+        const newCart = [...prev];
+        const item = { ...newCart[index] };
+        
+        if (quantity === 0) {
+          // Remove item if quantity is 0
+          return newCart.filter((_, i) => i !== index);
+        } else {
+          // Update quantity
+          item.quantity = quantity;
+          item.subtotal = item.rate * quantity;
+          newCart[index] = item;
+          return newCart;
+        }
+      });
+    }
+  };
+
+  // Filtered products based on search
+  const filteredProducts = useMemo(() => {
+    if (!searchTerm) {
+      if (activeCategory === "bend") return PRODUCTS.bend;
+      if (activeCategory === "coupler") return PRODUCTS.coupler;
+      return PRODUCTS.jet;
+    }
+
+    const term = searchTerm.toLowerCase();
+    if (activeCategory === "bend") {
+      return PRODUCTS.bend.filter(b => 
+        b.size.toString().includes(term) ||
+        Object.keys(b.rates).some(w => w.toLowerCase().includes(term))
+      );
+    }
+    if (activeCategory === "coupler") {
+      return PRODUCTS.coupler.filter(c => 
+        c.size.toString().includes(term) ||
+        Object.keys(c.rates).some(w => w.toLowerCase().includes(term))
+      );
+    }
+    return PRODUCTS.jet.filter(j => 
+      j.name.toLowerCase().includes(term)
+    );
+  }, [activeCategory, searchTerm]);
+
+  const cartTotalItems = useMemo(() => 
+    cart.reduce((sum, item) => sum + (item.quantity || 1), 0), [cart]);
+
+  return (
+    <div className="max-w-md mx-auto p-4 space-y-4 relative pb-32">
+
+      {/* Language Switcher */}
+      <div className="fixed top-4 left-4 z-10">
+        <select 
+          value={language}
+          onChange={(e) => setLanguage(e.target.value)}
+          className="text-sm p-2 rounded-lg bg-white shadow"
+        >
+          <option value="en">English</option>
+          <option value="ta">தமிழ்</option>
+        </select>
       </div>
 
-      {/* OWNER LOGIN */}
-      {!ownerMode && (
-        <div className="bg-white p-4 rounded-xl">
-          <input type="password" placeholder="Owner Password"
-            value={password} onChange={e=>setPassword(e.target.value)} />
-          <button className="bg-black text-white w-full p-2"
-            onClick={()=>password===OWNER_PASSWORD && setOwnerMode(true)}>
-            Owner Login
-          </button>
+      {/* Hidden owner login trigger */}
+      <div 
+        className="hidden-login" 
+        onClick={() => setShowLogin(true)}
+        title={t.ownerLogin}
+      >
+        🔒
+      </div>
+
+      {/* Owner Login Modal */}
+      {showLogin && !ownerMode && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-6 rounded-xl w-full max-w-sm">
+            <h3 className="font-black mb-4 text-center text-lg">{t.ownerLogin}</h3>
+            <input 
+              type="password" 
+              placeholder="Enter Password"
+              value={password} 
+              onChange={e=>setPassword(e.target.value)}
+              className="mb-4"
+              onKeyPress={(e) => e.key === 'Enter' && password === OWNER_PASSWORD && setOwnerMode(true)}
+            />
+            <div className="flex space-x-2">
+              <button 
+                className="bg-green-600 text-white flex-1 p-3 rounded-lg font-medium"
+                onClick={() => {
+                  if (password === OWNER_PASSWORD) {
+                    setOwnerMode(true);
+                    setShowLogin(false);
+                    setPassword("");
+                  } else {
+                    alert("Incorrect password");
+                  }
+                }}
+              >
+                {language === 'en' ? 'Login' : 'உள்நுழைவு'}
+              </button>
+              <button 
+                className="bg-gray-300 text-black flex-1 p-3 rounded-lg font-medium"
+                onClick={() => setShowLogin(false)}
+              >
+                {language === 'en' ? 'Cancel' : 'ரத்து செய்'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
+
+      {/* Bill Options Modal */}
+      {showBillOptions && currentBill && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-6 rounded-xl w-full max-w-sm">
+            <h3 className="font-black mb-4 text-center text-lg">🎉 {t.billGenerated}</h3>
+            <p className="text-center mb-2 font-medium">{language === 'en' ? 'Bill No:' : 'பில் எண்:'} #{currentBill.billNo}</p>
+            <p className="text-center mb-6 text-gray-600">{language === 'en' ? 'Customer:' : 'வாடிக்கையாளர்:'} {currentBill.customer}</p>
+            
+            <div className="space-y-3">
+              <button 
+                className="bg-gradient-to-r from-green-500 to-blue-500 text-white w-full p-3 rounded-lg font-medium shadow-md"
+                onClick={handleBothActions}
+              >
+                📲 {t.sendWhatsAppPDF}
+              </button>
+              
+              <button 
+                className="bg-green-600 text-white w-full p-3 rounded-lg font-medium"
+                onClick={handleSendWhatsApp}
+              >
+                📲 {t.sendWhatsApp}
+              </button>
+              
+              <button 
+                className="bg-blue-600 text-white w-full p-3 rounded-lg font-medium"
+                onClick={handleDownloadPDF}
+              >
+                📥 {t.downloadPDF}
+              </button>
+              
+              <button 
+                className="bg-gray-100 text-gray-800 w-full p-3 rounded-lg font-medium border"
+                onClick={completeBillProcess}
+              >
+                ✅ {t.doneNewBill}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* HEADER */}
+      <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 p-4 rounded-xl text-center font-black shadow-lg mt-8">
+        <div className="text-xl">{t.title}</div>
+        <div className={`text-xs font-normal mt-1 ${language === 'ta' ? 'tamil-text' : ''}`}>
+          {t.address}<br/>
+          📞 {t.phone}
+        </div>
+      </div>
 
       {/* OWNER HISTORY */}
       {ownerMode && (
-        <div className="bg-white p-4 rounded-xl">
-          <h3 className="font-black mb-2">Order History</h3>
-          {history.length===0 && <p className="text-sm">No bills yet</p>}
-          {history.map(b=>(
-            <div key={b.billNo} className="border-b py-1 text-sm">
-              #{b.billNo} | {b.customer} | ₹{b.total}
+        <div className="bg-white p-4 rounded-xl shadow">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-black text-lg">📋 {t.orderHistory}</h3>
+            <button 
+              className="text-sm bg-red-500 text-white px-4 py-2 rounded-lg font-medium"
+              onClick={() => setOwnerMode(false)}
+            >
+              {t.logout}
+            </button>
+          </div>
+          {history.length===0 ? (
+            <p className="text-gray-500 text-center py-4">{t.noBills}</p>
+          ) : (
+            <div className="space-y-3 max-h-80 overflow-y-auto">
+              {history.map(b=>(
+                <div key={b.billNo} className="border border-gray-200 p-3 rounded-lg">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-bold">#{b.billNo}</div>
+                      <div className="text-sm text-gray-600">{b.customer}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-green-600">₹{b.total}</div>
+                      <div className="text-xs text-gray-500">{b.date.split(',')[0]}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       )}
 
-      {/* CUSTOMER */}
-      <input placeholder="Customer Name"
-        value={customer} onChange={e=>setCustomer(e.target.value)} />
+      {/* CUSTOMER INPUT */}
+      <div className="bg-white p-4 rounded-xl shadow">
+        <label className="block font-medium mb-2">👤 {t.customerName}</label>
+        <input 
+          placeholder={t.customerPlaceholder}
+          value={customer} 
+          onChange={e=>setCustomer(e.target.value)}
+          className="text-lg"
+        />
+      </div>
 
-      {/* PRODUCTS */}
-      <h3 className="font-black">BEND</h3>
-      {PRODUCTS.bend.map(b =>
-        Object.entries(b.rates).map(([w,r])=>(
-          <button key={b.size+w}
-            className="bg-white w-full p-2 mb-1"
-            onClick={()=>addItem(`${b.size}mm Bend ${w}`, r)}>
-            {b.size}mm Bend {w} – ₹{r}
+      {/* PRODUCT SELECTION */}
+      <div className="bg-white rounded-xl shadow overflow-hidden">
+        {/* Category Tabs */}
+        <div className="flex border-b">
+          <button
+            className={`flex-1 p-3 font-medium ${activeCategory === "bend" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100"} ${language === 'ta' ? 'tamil-text' : ''}`}
+            onClick={() => setActiveCategory("bend")}
+          >
+            🔧 {t.bend}
           </button>
-        ))
-      )}
-
-      <h3 className="font-black">COUPLER</h3>
-      {PRODUCTS.coupler.map(c =>
-        Object.entries(c.rates).map(([w,r])=>(
-          <button key={c.size+w}
-            className="bg-white w-full p-2 mb-1"
-            onClick={()=>addItem(`${c.size}mm Coupler ${w}`, r)}>
-            {c.size}mm Coupler {w} – ₹{r}
+          <button
+            className={`flex-1 p-3 font-medium ${activeCategory === "coupler" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100"} ${language === 'ta' ? 'tamil-text' : ''}`}
+            onClick={() => setActiveCategory("coupler")}
+          >
+            🔗 {t.coupler}
           </button>
-        ))
-      )}
+          <button
+            className={`flex-1 p-3 font-medium ${activeCategory === "jet" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100"} ${language === 'ta' ? 'tamil-text' : ''}`}
+            onClick={() => setActiveCategory("jet")}
+          >
+            💧 {t.jetValve}
+          </button>
+        </div>
 
-      <h3 className="font-black">JET FOOT VALVE</h3>
-      {PRODUCTS.jet.map(j=>(
-        <button key={j.name}
-          className="bg-white w-full p-2 mb-1"
-          onClick={()=>addItem(`Jet ${j.name}`, j.rate)}>
-          Jet {j.name} – ₹{j.rate}
-        </button>
-      ))}
+        {/* Search */}
+        <div className="p-3 border-b">
+          <input
+            type="text"
+            placeholder={`${t.search} ${t[activeCategory] || activeCategory}...`}
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="text-sm"
+          />
+        </div>
 
-      {/* CART */}
-      <div className="bg-white p-4 rounded-xl">
-        {cart.map((i,idx)=>(
-          <div key={idx} className="flex justify-between">
-            <span>{i.name}</span>
-            <span>₹{i.rate}</span>
-          </div>
-        ))}
-        <div className="font-black text-right mt-2">
-          Total ₹{total}
+        {/* Product List */}
+        <div className="max-h-80 overflow-y-auto p-3">
+          {filteredProducts.map((product, index) => {
+            if (activeCategory === "bend" || activeCategory === "coupler") {
+              return Object.entries(product.rates).map(([weight, rate]) => {
+                const productKey = `${activeCategory}_${product.size}_${weight}`;
+                const quantity = productQuantities[productKey] || "";
+                
+                return (
+                  <div key={`${product.size}-${weight}`} className="product-card border border-gray-200 rounded-lg p-3 mb-3">
+                    <div className="flex justify-between items-center mb-3">
+                      <div>
+                        <div className="font-bold">{product.size}mm {t[activeCategory] || activeCategory.toUpperCase()}</div>
+                        <div className="text-sm text-gray-600">{weight}</div>
+                      </div>
+                      <div className="font-bold text-green-600">₹{rate}</div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <label className="text-sm font-medium">{t.quantity}:</label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          placeholder={t.qtyPlaceholder}
+                          value={quantity}
+                          onChange={(e) => updateQuantity(productKey, e.target.value)}
+                          className="quantity-input"
+                        />
+                      </div>
+                      <div className="text-sm font-medium">
+                        {t.subtotal}: <span className="text-blue-600">₹{rate * (parseInt(quantity) || 0)}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              });
+            } else {
+              // Jet Valves
+              const productKey = `jet_${product.name}`;
+              const quantity = productQuantities[productKey] || "";
+              
+              return (
+                <div key={product.name} className="product-card border border-gray-200 rounded-lg p-3 mb-3">
+                  <div className="flex justify-between items-center mb-3">
+                    <div>
+                      <div className="font-bold">{t.jetValve}</div>
+                      <div className="text-sm text-gray-600">{product.name}</div>
+                    </div>
+                    <div className="font-bold text-green-600">₹{product.rate}</div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <label className="text-sm font-medium">{t.quantity}:</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        placeholder={t.qtyPlaceholder}
+                        value={quantity}
+                        onChange={(e) => updateQuantity(productKey, e.target.value)}
+                        className="quantity-input"
+                      />
+                    </div>
+                    <div className="text-sm font-medium">
+                      {t.subtotal}: <span className="text-blue-600">₹{product.rate * (parseInt(quantity) || 0)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+          })}
         </div>
       </div>
 
-      <button onClick={generateBill}
-        className="bg-green-600 text-white w-full p-3 rounded-xl">
-        Generate Bill
-      </button>
+      {/* Action Buttons */}
+      <div className="flex space-x-3">
+        <button 
+          onClick={clearAllQuantities}
+          className="flex-1 bg-gray-200 text-gray-800 p-3 rounded-xl font-medium"
+        >
+          🗑️ {t.clearAll}
+        </button>
+        <button 
+          onClick={addToCart}
+          className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3 rounded-xl font-bold text-lg shadow-lg"
+        >
+          🛒 {t.addToCart}
+        </button>
+      </div>
+
+      {/* CART - Fixed at bottom */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 max-w-md mx-auto">
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="font-black text-lg">🛍️ {t.cart} ({cartTotalItems} {t.items})</h3>
+          <div className="font-bold text-green-600 text-lg">₹{total}</div>
+        </div>
+        
+        <div className="max-h-40 overflow-y-auto mb-3">
+          {cart.length === 0 ? (
+            <p className="text-gray-500 text-center py-2">{language === 'en' ? 'Cart is empty' : 'கார்ட் காலியாக உள்ளது'}</p>
+          ) : (
+            <div className="space-y-2">
+              {cart.map((item, index) => (
+                <div key={index} className="cart-item bg-gray-50 p-2 rounded-lg">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{item.name}</div>
+                      <div className="text-xs text-gray-600">₹{item.rate} {t.each}</div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={item.quantity || 1}
+                        onChange={(e) => updateCartQuantity(index, e.target.value)}
+                        className="w-12 text-center p-1 border rounded"
+                      />
+                      <div className="font-bold w-20 text-right">₹{item.subtotal || item.rate}</div>
+                      <button 
+                        onClick={() => removeFromCart(index)}
+                        className="text-red-500 text-lg"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        <button 
+          onClick={generateBill}
+          disabled={!customer || cart.length === 0}
+          className={`w-full p-3 rounded-xl font-bold text-lg ${
+            !customer || cart.length === 0 
+              ? 'bg-gray-300 text-gray-500' 
+              : 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg'
+          }`}
+        >
+          {!customer ? t.enterCustomerName : cart.length === 0 ? t.addItems : `💰 ${t.generateBill}`}
+        </button>
+      </div>
 
     </div>
   );
