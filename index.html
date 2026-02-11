@@ -645,7 +645,7 @@ function App() {
 
         const msg = 
 `SRI VINAYAGA LABER WORKS
-SINTHAN NAGAR, KRISHNAMPALAYAM, ERODE - 03
+Sinthan Nagar, Krishnampalayam, Erode - 03
 
 Bill No: ${bill.billNo}
 Customer: ${bill.customer}
@@ -771,7 +771,7 @@ TOTAL: ₹${bill.total}`;
                 <div 
                     className="hidden-login touch-target" 
                     onClick={() => setShowLogin(true)}
-                    title="Owner Login / உரிமையாளர் உள்நுழைவு"
+                    title="Owner Login"
                 >
                     🔒
                 </div>
@@ -780,9 +780,7 @@ TOTAL: ₹${bill.total}`;
                 {showLogin && !ownerMode && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white p-6 rounded-xl w-full max-w-sm modal-enter">
-                            <h3 className="font-black mb-4 text-center text-lg">
-                                <DualText en="Owner Login" ta="உரிமையாளர் உள்நுழைவு" />
-                            </h3>
+                            <h3 className="font-black mb-4 text-center text-lg">Owner Login</h3>
                             <input 
                                 type="password" 
                                 placeholder="Enter Password"
@@ -805,13 +803,13 @@ TOTAL: ₹${bill.total}`;
                                         }
                                     }}
                                 >
-                                    <DualText en="Login" ta="உள்நுழைவு" />
+                                    Login
                                 </button>
                                 <button 
                                     className="bg-gray-300 text-black flex-1 p-3 rounded-lg font-medium"
                                     onClick={() => setShowLogin(false)}
                                 >
-                                    <DualText en="Cancel" ta="ரத்து செய்" />
+                                    Cancel
                                 </button>
                             </div>
                         </div>
@@ -822,67 +820,49 @@ TOTAL: ₹${bill.total}`;
                 {showBillOptions && currentBill && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white p-6 rounded-xl w-full max-w-sm modal-enter">
-                            <h3 className="font-black mb-4 text-center text-lg">🎉 
-                                <DualText en="Bill Generated!" ta="பில் உருவாக்கப்பட்டது!" />
-                            </h3>
-                            <p className="text-center mb-2 font-medium">
-                                <DualText en={`Bill No: #${currentBill.billNo}`} ta={`பில் எண்: #${currentBill.billNo}`} />
-                            </p>
-                            <p className="text-center mb-6 text-gray-600">
-                                <DualText en={`Customer: ${currentBill.customer}`} ta={`வாடிக்கையாளர்: ${currentBill.customer}`} />
-                            </p>
+                            <h3 className="font-black mb-4 text-center text-lg">🎉 Bill Generated!</h3>
+                            <p className="text-center mb-2 font-medium">Bill No: #{currentBill.billNo}</p>
+                            <p className="text-center mb-6 text-gray-600">Customer: {currentBill.customer}</p>
                             
                             <div className="space-y-3">
                                 <button 
                                     className="bg-gradient-to-r from-green-500 to-blue-500 text-white w-full p-3 rounded-lg font-medium shadow-md"
                                     onClick={handleBothActions}
                                 >
-                                    📲 <DualText en="Send WhatsApp & Download PDF" ta="WhatsApp அனுப்பு & PDF பதிவிறக்கு" />
+                                    📲 Send WhatsApp & Download PDF
                                 </button>
                                 
                                 <button 
                                     className="bg-green-600 text-white w-full p-3 rounded-lg font-medium"
                                     onClick={handleSendWhatsApp}
                                 >
-                                    📲 <DualText en="Send via WhatsApp" ta="WhatsApp மூலம் அனுப்பு" />
+                                    📲 Send via WhatsApp
                                 </button>
                                 
                                 <button 
                                     className="bg-blue-600 text-white w-full p-3 rounded-lg font-medium"
                                     onClick={handleDownloadPDF}
                                 >
-                                    📥 <DualText en="Download PDF" ta="PDF பதிவிறக்கு" />
+                                    📥 Download PDF
                                 </button>
                                 
                                 <button 
                                     className="bg-gray-100 text-gray-800 w-full p-3 rounded-lg font-medium border"
                                     onClick={completeBillProcess}
                                 >
-                                    ✅ <DualText en="Done & New Bill" ta="முடிந்தது & புதிய பில்" />
+                                    ✅ Done & New Bill
                                 </button>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* HEADER */}
+                {/* HEADER - English Only */}
                 <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 p-4 rounded-xl text-center font-black shadow-lg mb-6">
-                    <div className="text-xl md:text-2xl">
-                        <DualText en="SRI VINAYAGA LABER WORKS" ta="ஸ்ரீ விநாயக லேபர் வொர்க்ஸ்" />
-                    </div>
+                    <div className="text-xl md:text-2xl">SRI VINAYAGA LABER WORKS</div>
                     <div className="text-xs md:text-sm font-normal mt-2">
-                        <div className="tamil-text">
-                            <DualText 
-                                en="Sinthan Nagar, Krishnampalayam, Erode - 03" 
-                                ta="சிந்தன் நகர், கிருஷ்ணம்பாளையம், ஈரோடு - 03" 
-                            />
-                        </div>
-                        <div className="mt-1">
-                            <DualText 
-                                en="📞 Cell: 9095786363, 8015767107" 
-                                ta="📞 தொலைபேசி: 9095786363, 8015767107" 
-                            />
-                        </div>
+                        Sinthan Nagar, Krishnampalayam, Erode - 03<br/>
+                        📞 Cell: 9095786363, 8015767107
                     </div>
                 </div>
 
@@ -890,9 +870,7 @@ TOTAL: ₹${bill.total}`;
                 {ownerMode && (
                     <div className="bg-white p-4 rounded-xl shadow mb-6">
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-black text-lg">
-                                <DualText en="📋 Order History" ta="📋 ஆர்டர் வரலாறு" />
-                            </h3>
+                            <h3 className="font-black text-lg">📋 Order History</h3>
                             <button 
                                 className="text-sm bg-red-500 text-white px-4 py-2 rounded-lg font-medium"
                                 onClick={() => {
@@ -900,13 +878,11 @@ TOTAL: ₹${bill.total}`;
                                     showNotification("Logged out successfully", 'success');
                                 }}
                             >
-                                <DualText en="Logout" ta="வெளியேறு" />
+                                Logout
                             </button>
                         </div>
                         {history.length===0 ? (
-                            <p className="text-gray-500 text-center py-4">
-                                <DualText en="No bills yet" ta="இன்னும் பில்ல்கள் இல்லை" />
-                            </p>
+                            <p className="text-gray-500 text-center py-4">No bills yet</p>
                         ) : (
                             <div className="space-y-3 max-h-80 overflow-y-auto">
                                 {history.map(b=>(
