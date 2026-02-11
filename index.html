@@ -1,584 +1,650 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#fbbf24">
-    <meta name="description" content="Sri Vinayaga Laber Works - Billing System">
-    <title>Sri Vinayaga Laber Works</title>
-    
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-    
-    <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="icon-192.png">
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="icon-192.png">
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#fbbf24">
+<meta name="description" content="Sri Vinayaga Laber Works - Billing System">
+<title>Sri Vinayaga Laber Works</title>
 
-    <style>
-        * {
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        body { 
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            background: #f8fafc; 
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        
-        select, input { 
-            width: 100%; 
-            padding: 14px 16px; 
-            border-radius: 12px; 
-            margin-bottom: 8px; 
-            border: 1px solid #d1d5db; 
-            font-size: 16px;
-            background: white;
-        }
-        
-        input:focus, select:focus {
-            outline: none;
-            border-color: #f59e0b;
-            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
-        }
-        
-        button { 
-            border-radius: 12px; 
-            font-size: 16px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            border: none;
-            cursor: pointer;
-            user-select: none;
-        }
-        
-        button:active {
-            transform: scale(0.98);
-        }
-        
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .hidden-login { 
-            position: absolute; 
-            top: 16px; 
-            right: 16px; 
-            opacity: 0.1; 
-            cursor: pointer; 
-            font-size: 14px; 
-            z-index: 100;
-            background: white;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        
-        .product-card { 
-            transition: all 0.3s ease; 
-        }
-        
-        .quantity-btn { 
-            width: 44px; 
-            height: 44px; 
-            border-radius: 50%; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-weight: bold;
-            font-size: 20px;
-        }
-        
-        .cart-item { 
-            animation: slideIn 0.3s ease; 
-        }
-        
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-10px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-        
-        .tamil-text { 
-            font-family: 'Arial Unicode MS', 'TAMu_Kadambri', 'Latha', 'Noto Sans Tamil', sans-serif; 
-        }
-        
-        .dual-text { 
-            display: flex; 
-            flex-direction: column;
-            line-height: 1.4;
-        }
-        
-        .english-text { 
-            font-weight: 600; 
-            font-size: 1em;
-        }
-        
-        .tamil-text-part { 
-            font-size: 0.85em; 
-            color: #4b5563; 
-            margin-top: 2px;
-            font-weight: 400;
-        }
-        
-        /* Responsive adjustments */
-        @media (max-width: 640px) {
-            .container-padding {
-                padding: 16px;
-            }
-            
-            .quantity-btn {
-                width: 40px;
-                height: 40px;
-                font-size: 18px;
-            }
-            
-            select, input {
-                padding: 12px 14px;
-                font-size: 16px;
-            }
-            
-            button {
-                padding: 14px;
-                font-size: 16px;
-            }
-        }
-        
-        @media (min-width: 641px) {
-            .container-padding {
-                padding: 24px;
-                max-width: 480px;
-                margin: 0 auto;
-            }
-            
-            .quantity-btn {
-                width: 44px;
-                height: 44px;
-                font-size: 20px;
-            }
-        }
-        
-        @media (min-width: 1024px) {
-            .container-padding {
-                max-width: 480px;
-                padding: 32px 24px;
-            }
-        }
-        
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
-            border-radius: 10px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: #a1a1a1;
-        }
-        
-        /* Modal animations */
-        .modal-enter {
-            animation: modalFadeIn 0.3s ease;
-        }
-        
-        @keyframes modalFadeIn {
-            from {
-                opacity: 0;
-                transform: scale(0.9);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-        
-        /* Touch-friendly sizes */
-        .touch-target {
-            min-height: 44px;
-            min-width: 44px;
-        }
-        
-        /* Hide scrollbar for Chrome, Safari and Opera */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        
-        /* Hide scrollbar for IE, Edge and Firefox */
-        .no-scrollbar {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
-        }
-        
-        /* Product grid for desktop */
-        @media (min-width: 768px) {
-            .product-grid {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 12px;
-            }
-            
-            .product-card {
-                margin-bottom: 0;
-            }
-        }
-    </style>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+body { 
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+    background: #f8fafc; 
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+select, input { 
+    width: 100%; 
+    padding: 14px 16px; 
+    border-radius: 12px; 
+    margin-bottom: 8px; 
+    border: 1px solid #d1d5db; 
+    font-size: 16px;
+    background: white;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+button { 
+    border-radius: 12px; 
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    user-select: none;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.hidden-login { 
+    position: absolute; 
+    top: 16px; 
+    right: 16px; 
+    opacity: 0.1; 
+    cursor: pointer; 
+    font-size: 14px; 
+    z-index: 100;
+    background: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.product-card { 
+    transition: all 0.3s ease; 
+}
+
+.quantity-btn { 
+    width: 44px; 
+    height: 44px; 
+    border-radius: 50%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.cart-item { 
+    animation: slideIn 0.3s ease; 
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.tamil-text { 
+    font-family: 'Arial Unicode MS', 'TAMu_Kadambri', 'Latha', 'Noto Sans Tamil', sans-serif; 
+}
+
+.dual-text { 
+    display: flex; 
+    flex-direction: column;
+    line-height: 1.4;
+}
+
+.english-text { 
+    font-weight: 600; 
+    font-size: 1em;
+}
+
+.tamil-text-part { 
+    font-size: 0.85em; 
+    color: #4b5563; 
+    margin-top: 2px;
+    font-weight: 400;
+}
+
+/* Notification Styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #10b981;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideDown 0.3s ease, fadeOut 0.3s ease 2s forwards;
+    max-width: 90%;
+    text-align: center;
+}
+
+.notification.error {
+    background: #ef4444;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -20px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+        visibility: hidden;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .container-padding {
+        padding: 16px;
+    }
     
-    <!-- PWA Service Worker Registration -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('sw.js').then(function(registration) {
-                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                }, function(err) {
-                    console.log('ServiceWorker registration failed: ', err);
-                });
-            });
-        }
-        
-        // Prevent context menu on long press
-        document.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
+    .quantity-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+    }
+    
+    select, input {
+        padding: 12px 14px;
+        font-size: 16px;
+    }
+    
+    button {
+        padding: 14px;
+        font-size: 16px;
+    }
+    
+    .notification {
+        top: 10px;
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+}
+
+@media (min-width: 641px) {
+    .container-padding {
+        padding: 24px;
+        max-width: 480px;
+        margin: 0 auto;
+    }
+    
+    .quantity-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 20px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .container-padding {
+        max-width: 480px;
+        padding: 32px 24px;
+    }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* Modal animations */
+.modal-enter {
+    animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Touch-friendly sizes */
+.touch-target {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* Product grid for desktop */
+@media (min-width: 768px) {
+    .product-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    
+    .product-card {
+        margin-bottom: 0;
+    }
+}
+</style>
+
+<!-- PWA Service Worker Registration -->
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw.js').then(function(registration) {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        }, function(err) {
+            console.log('ServiceWorker registration failed: ', err);
         });
-        
-        // Prevent text selection on mobile
-        document.addEventListener('selectstart', function(e) {
-            e.preventDefault();
-        });
-        
-        // Add to home screen prompt
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            // You can show your custom install button here
-            console.log('PWA installation available');
-        });
-    </script>
+    });
+}
+
+// Prevent context menu on long press
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+});
+
+// Prevent text selection on mobile
+document.addEventListener('selectstart', function(e) {
+    e.preventDefault();
+});
+
+// Add to home screen prompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    console.log('PWA installation available');
+});
+</script>
 </head>
 
 <body>
-    <div id="root"></div>
+<div id="root"></div>
 
-    <script type="text/babel">
-    const { useState, useMemo, useEffect } = React;
+<script type="text/babel">
+const { useState, useMemo, useEffect } = React;
 
-    /* 🔐 OWNER */
-    const OWNER_PASSWORD = "6363";
-    const WHATSAPP_NO = "918643861100";
+/* 🔐 OWNER */
+const OWNER_PASSWORD = "6363";
+const WHATSAPP_NO = "918643861100";
 
-    /* 📦 PRODUCTS */
-    const PRODUCTS = {
-        bend: [
-            { size: 20, rates: { "15 Kgs": 1.40 } },
-            { size: 25, rates: { "10 Kgs": 1.50, "15 Kgs": 2.00 } },
-            { size: 32, rates: { "10 Kgs": 2.50, "15 Kgs": 2.80 } },
-            { size: 40, rates: { "6 Kgs": 3.00, "10 Kgs": 4.00, "15 Kgs": 3.70 } },
-            { size: 50, rates: { "6 Kgs": 4.00, "10 Kgs": 6.00, "15 Kgs": 4.95, "S-Bend": 8.00 } },
-            { size: 63, rates: { "4 Kgs": 6.50, "6 Kgs": 7.00, "S-Bend": 9.00 } },
-            { size: 75, rates: { "4 Kgs": 7.50, "6 Kgs": 8.60, "S-Bend": 10.00 } },
-            { size: 90, rates: { "4 Kgs": 9.50, "6 Kgs": 11.50, "S-Bend": 13.00 } },
-            { size: 110, rates: { "4 Kgs": 13.50, "6 Kgs": 15.00, "S-Bend": 17.00 } },
-            { size: 140, rates: { "4 Kgs": 65.00, "6 Kgs": 80.00, "S-Bend": 115.00 } },
-            { size: 160, rates: { "4 Kgs": 100.00, "6 Kgs": 115.00, "S-Bend": 172.50 } },
-            { size: 180, rates: { "4 Kgs": 170.00, "6 Kgs": 195.50 } },
-            { size: 200, rates: { "4 Kgs": 220.00, "6 Kgs": 245.50 } }
-        ],
-        coupler: [
-            { size: 20, rates: { "15 Kgs": 1.00 } },
-            { size: 25, rates: { "10 Kgs": 1.15, "15 Kgs": 1.30 } },
-            { size: 32, rates: { "10 Kgs": 1.40, "15 Kgs": 1.50 } },
-            { size: 40, rates: { "6 Kgs": 2.00, "10 Kgs": 2.30, "15 Kgs": 2.35 } },
-            { size: 50, rates: { "6 Kgs": 2.30, "10 Kgs": 2.50 } },
-            { size: 63, rates: { "4 Kgs": 3.00, "6 Kgs": 3.45 } },
-            { size: 75, rates: { "4 Kgs": 3.45, "6 Kgs": 4.00 } },
-            { size: 90, rates: { "4 Kgs": 4.50, "6 Kgs": 5.20 } },
-            { size: 110, rates: { "4 Kgs": 5.20, "6 Kgs": 6.30 } },
-            { size: 140, rates: { "4 Kgs": 8.60, "6 Kgs": 9.00 } },
-            { size: 160, rates: { "4 Kgs": 11.50, "6 Kgs": 12.65 } }
-        ],
-        jet: [
-            { name: "50*6", rate: 30 },
-            { name: "50*15", rate: 35 },
-            { name: "50*32", rate: 45 },
-            { name: "50*40", rate: 55 },
-            { name: "63*6", rate: 45 },
-            { name: "63*15", rate: 55 }
-        ]
-    };
+/* 📦 PRODUCTS */
+const PRODUCTS = {
+    bend: [
+        { size: 20, rates: { "15 Kgs": 1.40 } },
+        { size: 25, rates: { "10 Kgs": 1.50, "15 Kgs": 2.00 } },
+        { size: 32, rates: { "10 Kgs": 2.50, "15 Kgs": 2.80 } },
+        { size: 40, rates: { "6 Kgs": 3.00, "10 Kgs": 4.00, "15 Kgs": 3.70 } },
+        { size: 50, rates: { "6 Kgs": 4.00, "10 Kgs": 6.00, "15 Kgs": 4.95, "S-Bend": 8.00 } },
+        { size: 63, rates: { "4 Kgs": 6.50, "6 Kgs": 7.00, "S-Bend": 9.00 } },
+        { size: 75, rates: { "4 Kgs": 7.50, "6 Kgs": 8.60, "S-Bend": 10.00 } },
+        { size: 90, rates: { "4 Kgs": 9.50, "6 Kgs": 11.50, "S-Bend": 13.00 } },
+        { size: 110, rates: { "4 Kgs": 13.50, "6 Kgs": 15.00, "S-Bend": 17.00 } },
+        { size: 140, rates: { "4 Kgs": 65.00, "6 Kgs": 80.00, "S-Bend": 115.00 } },
+        { size: 160, rates: { "4 Kgs": 100.00, "6 Kgs": 115.00, "S-Bend": 172.50 } },
+        { size: 180, rates: { "4 Kgs": 170.00, "6 Kgs": 195.50 } },
+        { size: 200, rates: { "4 Kgs": 220.00, "6 Kgs": 245.50 } }
+    ],
+    coupler: [
+        { size: 20, rates: { "15 Kgs": 1.00 } },
+        { size: 25, rates: { "10 Kgs": 1.15, "15 Kgs": 1.30 } },
+        { size: 32, rates: { "10 Kgs": 1.40, "15 Kgs": 1.50 } },
+        { size: 40, rates: { "6 Kgs": 2.00, "10 Kgs": 2.30, "15 Kgs": 2.35 } },
+        { size: 50, rates: { "6 Kgs": 2.30, "10 Kgs": 2.50 } },
+        { size: 63, rates: { "4 Kgs": 3.00, "6 Kgs": 3.45 } },
+        { size: 75, rates: { "4 Kgs": 3.45, "6 Kgs": 4.00 } },
+        { size: 90, rates: { "4 Kgs": 4.50, "6 Kgs": 5.20 } },
+        { size: 110, rates: { "4 Kgs": 5.20, "6 Kgs": 6.30 } },
+        { size: 140, rates: { "4 Kgs": 8.60, "6 Kgs": 9.00 } },
+        { size: 160, rates: { "4 Kgs": 11.50, "6 Kgs": 12.65 } }
+    ],
+    jet: [
+        { name: "50*6", rate: 30 },
+        { name: "50*15", rate: 35 },
+        { name: "50*32", rate: 45 },
+        { name: "50*40", rate: 55 },
+        { name: "63*6", rate: 45 },
+        { name: "63*15", rate: 55 }
+    ]
+};
 
-    /* 🌐 TRANSLATIONS */
-    const TRANSLATIONS = {
-        en: {
-            title: "SRI VINAYAGA LABER WORKS",
-            address: "Sinthan Nagar, Krishnampalayam, Erode - 03",
-            phone: "Cell: 9095786363, 8015767107",
-            customerName: "Customer Name",
-            customerPlaceholder: "Enter customer name",
-            bend: "BEND",
-            coupler: "COUPLER",
-            jetValve: "JET VALVE",
-            addToCart: "Add Selected to Cart",
-            cart: "Cart",
-            items: "items",
-            total: "Total",
-            generateBill: "Generate Bill",
-            enterCustomerName: "Enter Customer Name",
-            addItems: "Add Items to Cart",
-            ownerLogin: "Owner Login",
-            orderHistory: "Order History",
-            logout: "Logout",
-            noBills: "No bills yet",
-            billGenerated: "Bill Generated!",
-            sendWhatsAppPDF: "Send WhatsApp & Download PDF",
-            sendWhatsApp: "Send via WhatsApp",
-            downloadPDF: "Download PDF",
-            doneNewBill: "Done & New Bill",
-            thankYou: "Thank you for your business!",
-            quantity: "Qty",
-            rate: "Rate",
-            amount: "Amount",
-            subtotal: "Subtotal:",
-            each: "each"
-        },
-        ta: {
-            title: "ஸ்ரீ விநாயக லேபர் வொர்க்ஸ்",
-            address: "சிந்தன் நகர், கிருஷ்ணம்பாளையம், ஈரோடு - 03",
-            phone: "தொலைபேசி: 9095786363, 8015767107",
-            customerName: "வாடிக்கையாளர் பெயர்",
-            customerPlaceholder: "வாடிக்கையாளர் பெயரை உள்ளிடவும்",
-            bend: "பெண்ட்",
-            coupler: "கப்லர்",
-            jetValve: "ஜெட் வால்வ்",
-            addToCart: "தேர்ந்தெடுத்தவற்றை கார்ட்டில் சேர்க்கவும்",
-            cart: "கார்ட்",
-            items: "பொருட்கள்",
-            total: "மொத்தம்",
-            generateBill: "பில் உருவாக்கு",
-            enterCustomerName: "வாடிக்கையாளர் பெயரை உள்ளிடவும்",
-            addItems: "கார்ட்டில் பொருட்களை சேர்க்கவும்",
-            ownerLogin: "உரிமையாளர் உள்நுழைவு",
-            orderHistory: "ஆர்டர் வரலாறு",
-            logout: "வெளியேறு",
-            noBills: "இன்னும் பில்ல்கள் இல்லை",
-            billGenerated: "பில் உருவாக்கப்பட்டது!",
-            sendWhatsAppPDF: "WhatsApp அனுப்பு & PDF பதிவிறக்கு",
-            sendWhatsApp: "WhatsApp மூலம் அனுப்பு",
-            downloadPDF: "PDF பதிவிறக்கு",
-            doneNewBill: "முடிந்தது & புதிய பில்",
-            thankYou: "உங்கள் வணிகத்திற்கு நன்றி!",
-            quantity: "அளவு",
-            rate: "விலை",
-            amount: "தொகை",
-            subtotal: "துணைத்தொகை:",
-            each: "ஒவ்வொன்றும்"
-        }
-    };
+/* 🌐 TRANSLATIONS */
+const TRANSLATIONS = {
+    en: {
+        title: "SRI VINAYAGA LABER WORKS",
+        address: "Sinthan Nagar, Krishnampalayam, Erode - 03",
+        phone: "Cell: 9095786363, 8015767107",
+        customerName: "Customer Name",
+        customerPlaceholder: "Enter customer name",
+        bend: "BEND",
+        coupler: "COUPLER",
+        jetValve: "JET VALVE",
+        addToCart: "Add Selected to Cart",
+        cart: "Cart",
+        items: "items",
+        total: "Total",
+        generateBill: "Generate Bill",
+        enterCustomerName: "Enter Customer Name",
+        addItems: "Add Items to Cart",
+        ownerLogin: "Owner Login",
+        orderHistory: "Order History",
+        logout: "Logout",
+        noBills: "No bills yet",
+        billGenerated: "Bill Generated!",
+        sendWhatsAppPDF: "Send WhatsApp & Download PDF",
+        sendWhatsApp: "Send via WhatsApp",
+        downloadPDF: "Download PDF",
+        doneNewBill: "Done & New Bill",
+        thankYou: "Thank you for your business!",
+        quantity: "Qty",
+        rate: "Rate",
+        amount: "Amount",
+        subtotal: "Subtotal:",
+        each: "each"
+    },
+    ta: {
+        title: "ஸ்ரீ விநாயக லேபர் வொர்க்ஸ்",
+        address: "சிந்தன் நகர், கிருஷ்ணம்பாளையம், ஈரோடு - 03",
+        phone: "தொலைபேசி: 9095786363, 8015767107",
+        customerName: "வாடிக்கையாளர் பெயர்",
+        customerPlaceholder: "வாடிக்கையாளர் பெயரை உள்ளிடவும்",
+        bend: "பெண்ட்",
+        coupler: "கப்லர்",
+        jetValve: "ஜெட் வால்வ்",
+        addToCart: "தேர்ந்தெடுத்தவற்றை கார்ட்டில் சேர்க்கவும்",
+        cart: "கார்ட்",
+        items: "பொருட்கள்",
+        total: "மொத்தம்",
+        generateBill: "பில் உருவாக்கு",
+        enterCustomerName: "வாடிக்கையாளர் பெயரை உள்ளிடவும்",
+        addItems: "கார்ட்டில் பொருட்களை சேர்க்கவும்",
+        ownerLogin: "உரிமையாளர் உள்நுழைவு",
+        orderHistory: "ஆர்டர் வரலாறு",
+        logout: "வெளியேறு",
+        noBills: "இன்னும் பில்ல்கள் இல்லை",
+        billGenerated: "பில் உருவாக்கப்பட்டது!",
+        sendWhatsAppPDF: "WhatsApp அனுப்பு & PDF பதிவிறக்கு",
+        sendWhatsApp: "WhatsApp மூலம் அனுப்பு",
+        downloadPDF: "PDF பதிவிறக்கு",
+        doneNewBill: "முடிந்தது & புதிய பில்",
+        thankYou: "உங்கள் வணிகத்திற்கு நன்றி!",
+        quantity: "அளவு",
+        rate: "விலை",
+        amount: "தொகை",
+        subtotal: "துணைத்தொகை:",
+        each: "ஒவ்வொன்றும்"
+    }
+};
 
-    // Function to render dual language text
-    const DualText = ({ en, ta }) => (
-        <div className="dual-text">
-            <span className="english-text">{en}</span>
-            <span className="tamil-text tamil-text-part">{ta}</span>
+// Function to render dual language text
+const DualText = ({ en, ta }) => (
+    <div className="dual-text">
+        <span className="english-text">{en}</span>
+        <span className="tamil-text tamil-text-part">{ta}</span>
+    </div>
+);
+
+// Notification Component
+const Notification = ({ message, type = 'success', onClose }) => {
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            onClose();
+        }, 2000); // Auto close after 2 seconds
+
+        return () => clearTimeout(timer);
+    }, [onClose]);
+
+    return (
+        <div className={`notification ${type}`}>
+            <span>✅</span>
+            <span>{message}</span>
         </div>
     );
+};
 
-    function App() {
-        const [cart, setCart] = useState([]);
-        const [customer, setCustomer] = useState("");
-        const [history, setHistory] = useState([]);
-        const [billNo, setBillNo] = useState(() => {
-            const saved = localStorage.getItem('billNo');
-            return saved ? parseInt(saved) : 1001;
-        });
-        const [ownerMode, setOwnerMode] = useState(false);
-        const [password, setPassword] = useState("");
-        const [showLogin, setShowLogin] = useState(false);
-        const [showBillOptions, setShowBillOptions] = useState(false);
-        const [currentBill, setCurrentBill] = useState(null);
-        const [activeCategory, setActiveCategory] = useState("bend");
-        const [productQuantities, setProductQuantities] = useState({});
-        const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+function App() {
+    const [cart, setCart] = useState([]);
+    const [customer, setCustomer] = useState("");
+    const [history, setHistory] = useState([]);
+    const [billNo, setBillNo] = useState(() => {
+        const saved = localStorage.getItem('billNo');
+        return saved ? parseInt(saved) : 1001;
+    });
+    const [ownerMode, setOwnerMode] = useState(false);
+    const [password, setPassword] = useState("");
+    const [showLogin, setShowLogin] = useState(false);
+    const [showBillOptions, setShowBillOptions] = useState(false);
+    const [currentBill, setCurrentBill] = useState(null);
+    const [activeCategory, setActiveCategory] = useState("bend");
+    const [productQuantities, setProductQuantities] = useState({});
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    const [notification, setNotification] = useState(null);
 
-        const t = TRANSLATIONS.en;
+    const t = TRANSLATIONS.en;
 
-        useEffect(() => {
-            localStorage.setItem('billNo', billNo);
-            
-            // Check if mobile
-            const checkMobile = () => setIsMobile(window.innerWidth < 768);
-            window.addEventListener('resize', checkMobile);
-            return () => window.removeEventListener('resize', checkMobile);
-        }, [billNo]);
+    useEffect(() => {
+        localStorage.setItem('billNo', billNo);
+        
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, [billNo]);
 
-        // Initialize quantities for all products
-        useEffect(() => {
-            const quantities = {};
-            
-            PRODUCTS.bend.forEach(b => {
-                Object.keys(b.rates).forEach(weight => {
-                    const key = `bend_${b.size}_${weight}`;
-                    quantities[key] = 0;
-                });
-            });
-            
-            PRODUCTS.coupler.forEach(c => {
-                Object.keys(c.rates).forEach(weight => {
-                    const key = `coupler_${c.size}_${weight}`;
-                    quantities[key] = 0;
-                });
-            });
-            
-            PRODUCTS.jet.forEach(j => {
-                const key = `jet_${j.name}`;
+    // Show notification
+    const showNotification = (message, type = 'success') => {
+        setNotification({ message, type });
+        setTimeout(() => {
+            setNotification(null);
+        }, 2000);
+    };
+
+    // Initialize quantities for all products
+    useEffect(() => {
+        const quantities = {};
+        
+        PRODUCTS.bend.forEach(b => {
+            Object.keys(b.rates).forEach(weight => {
+                const key = `bend_${b.size}_${weight}`;
                 quantities[key] = 0;
             });
-            
-            setProductQuantities(quantities);
-        }, []);
+        });
+        
+        PRODUCTS.coupler.forEach(c => {
+            Object.keys(c.rates).forEach(weight => {
+                const key = `coupler_${c.size}_${weight}`;
+                quantities[key] = 0;
+            });
+        });
+        
+        PRODUCTS.jet.forEach(j => {
+            const key = `jet_${j.name}`;
+            quantities[key] = 0;
+        });
+        
+        setProductQuantities(quantities);
+    }, []);
 
-        const updateQuantity = (productKey, change) => {
-            setProductQuantities(prev => {
-                const current = prev[productKey] || 0;
-                const newQuantity = Math.max(0, current + change);
-                return { ...prev, [productKey]: newQuantity };
-            });
-        };
+    const updateQuantity = (productKey, change) => {
+        setProductQuantities(prev => {
+            const current = prev[productKey] || 0;
+            const newQuantity = Math.max(0, current + change);
+            return { ...prev, [productKey]: newQuantity };
+        });
+    };
 
-        const addToCartFromQuantities = () => {
-            const newItems = [];
-            
-            PRODUCTS.bend.forEach(b => {
-                Object.entries(b.rates).forEach(([weight, rate]) => {
-                    const key = `bend_${b.size}_${weight}`;
-                    const quantity = productQuantities[key] || 0;
-                    
-                    if (quantity > 0) {
-                        newItems.push({ 
-                            name: `${b.size}mm Bend ${weight}`, 
-                            rate: rate,
-                            quantity: quantity,
-                            subtotal: rate * quantity,
-                            category: 'bend',
-                            productKey: key
-                        });
-                    }
-                });
-            });
-            
-            PRODUCTS.coupler.forEach(c => {
-                Object.entries(c.rates).forEach(([weight, rate]) => {
-                    const key = `coupler_${c.size}_${weight}`;
-                    const quantity = productQuantities[key] || 0;
-                    
-                    if (quantity > 0) {
-                        newItems.push({ 
-                            name: `${c.size}mm Coupler ${weight}`, 
-                            rate: rate,
-                            quantity: quantity,
-                            subtotal: rate * quantity,
-                            category: 'coupler',
-                            productKey: key
-                        });
-                    }
-                });
-            });
-            
-            PRODUCTS.jet.forEach(j => {
-                const key = `jet_${j.name}`;
+    const addToCartFromQuantities = () => {
+        const newItems = [];
+        
+        PRODUCTS.bend.forEach(b => {
+            Object.entries(b.rates).forEach(([weight, rate]) => {
+                const key = `bend_${b.size}_${weight}`;
                 const quantity = productQuantities[key] || 0;
                 
                 if (quantity > 0) {
                     newItems.push({ 
-                        name: `Jet ${j.name}`, 
-                        rate: j.rate,
+                        name: `${b.size}mm Bend ${weight}`, 
+                        rate: rate,
                         quantity: quantity,
-                        subtotal: j.rate * quantity,
-                        category: 'jet',
+                        subtotal: rate * quantity,
+                        category: 'bend',
                         productKey: key
                     });
                 }
             });
-
-            if (newItems.length > 0) {
-                setCart(prev => [...prev, ...newItems]);
+        });
+        
+        PRODUCTS.coupler.forEach(c => {
+            Object.entries(c.rates).forEach(([weight, rate]) => {
+                const key = `coupler_${c.size}_${weight}`;
+                const quantity = productQuantities[key] || 0;
                 
-                const resetQuantities = { ...productQuantities };
-                newItems.forEach(item => {
-                    resetQuantities[item.productKey] = 0;
+                if (quantity > 0) {
+                    newItems.push({ 
+                        name: `${c.size}mm Coupler ${weight}`, 
+                        rate: rate,
+                        quantity: quantity,
+                        subtotal: rate * quantity,
+                        category: 'coupler',
+                        productKey: key
+                    });
+                }
+            });
+        });
+        
+        PRODUCTS.jet.forEach(j => {
+            const key = `jet_${j.name}`;
+            const quantity = productQuantities[key] || 0;
+            
+            if (quantity > 0) {
+                newItems.push({ 
+                    name: `Jet ${j.name}`, 
+                    rate: j.rate,
+                    quantity: quantity,
+                    subtotal: j.rate * quantity,
+                    category: 'jet',
+                    productKey: key
                 });
-                setProductQuantities(resetQuantities);
-                
-                alert(`${newItems.length} items added to cart!\n${newItems.length} பொருட்கள் கார்ட்டில் சேர்க்கப்பட்டன!`);
-            } else {
-                alert("Please select quantities before adding to cart!\nகார்ட்டில் சேர்க்க முன் அளவுகளைத் தேர்ந்தெடுக்கவும்!");
             }
-        };
+        });
 
-        const clearAllQuantities = () => {
+        if (newItems.length > 0) {
+            setCart(prev => [...prev, ...newItems]);
+            
             const resetQuantities = { ...productQuantities };
-            Object.keys(resetQuantities).forEach(key => {
-                resetQuantities[key] = 0;
+            newItems.forEach(item => {
+                resetQuantities[item.productKey] = 0;
             });
             setProductQuantities(resetQuantities);
+            
+            // Show notification instead of alert
+            showNotification(`${newItems.length} items added to cart!`, 'success');
+        } else {
+            // Show error notification instead of alert
+            showNotification("Please select quantities before adding to cart!", 'error');
+        }
+    };
+
+    const clearAllQuantities = () => {
+        const resetQuantities = { ...productQuantities };
+        Object.keys(resetQuantities).forEach(key => {
+            resetQuantities[key] = 0;
+        });
+        setProductQuantities(resetQuantities);
+    };
+
+    const total = useMemo(() => 
+        cart.reduce((s, i) => s + (i.subtotal || i.rate), 0), [cart]);
+
+    const generateBill = () => {
+        if (!customer || cart.length === 0) {
+            showNotification("Please enter customer name and add items to cart!", 'error');
+            return;
+        }
+
+        const bill = {
+            billNo,
+            customer,
+            items: cart.map(item => ({
+                ...item,
+                subtotal: item.subtotal || item.rate
+            })),
+            total,
+            date: new Date().toLocaleString()
         };
 
-        const total = useMemo(() => 
-            cart.reduce((s, i) => s + (i.subtotal || i.rate), 0), [cart]);
+        setHistory(h => [bill, ...h]);
+        setCurrentBill(bill);
+        setShowBillOptions(true);
+    };
 
-        const generateBill = () => {
-            if (!customer || cart.length === 0) {
-                alert("Please enter customer name and add items to cart!\nவாடிக்கையாளர் பெயரை உள்ளிட்டு பொருட்களை கார்ட்டில் சேர்க்கவும்!");
-                return;
+    const sendWhatsApp = (bill) => {
+        const itemsText = bill.items.map(i => {
+            if (i.quantity > 1) {
+                return `• ${i.name} (${i.quantity} x ₹${i.rate}) = ₹${i.subtotal}`;
             }
+            return `• ${i.name} - ₹${i.rate}`;
+        }).join("\n");
 
-            const bill = {
-                billNo,
-                customer,
-                items: cart.map(item => ({
-                    ...item,
-                    subtotal: item.subtotal || item.rate
-                })),
-                total,
-                date: new Date().toLocaleString()
-            };
-
-            setHistory(h => [bill, ...h]);
-            setCurrentBill(bill);
-            setShowBillOptions(true);
-        };
-
-        const sendWhatsApp = (bill) => {
-            const itemsText = bill.items.map(i => {
-                if (i.quantity > 1) {
-                    return `• ${i.name} (${i.quantity} x ₹${i.rate}) = ₹${i.subtotal}`;
-                }
-                return `• ${i.name} - ₹${i.rate}`;
-            }).join("\n");
-
-            const msg = 
-    `SRI VINAYAGA LABER WORKS
+        const msg = 
+`SRI VINAYAGA LABER WORKS
 SINTHAN NAGAR, KRISHNAMPALAYAM, ERODE - 03
 
 Bill No: ${bill.billNo}
@@ -588,371 +654,345 @@ Date: ${bill.date}
 ${itemsText}
 
 TOTAL: ₹${bill.total}`;
-            
-            window.open(`https://wa.me/${WHATSAPP_NO}?text=${encodeURIComponent(msg)}`, '_blank');
-        };
+        
+        window.open(`https://wa.me/${WHATSAPP_NO}?text=${encodeURIComponent(msg)}`, '_blank');
+    };
 
-        const downloadPDF = (bill) => {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            doc.setFontSize(18);
-            doc.text("SRI VINAYAGA LABER WORKS", 14, 15);
-            doc.setFontSize(10);
-            doc.text("Sinthan Nagar, Krishnampalayam, Erode - 03", 14, 22);
-            doc.text("Cell: 9095786363, 8015767107", 14, 27);
-            
-            doc.setFontSize(12);
-            doc.text(`Bill No: ${bill.billNo}`, 14, 36);
-            doc.text(`Customer: ${bill.customer}`, 14, 42);
-            doc.text(`Date: ${bill.date.split(',')[0]}`, 140, 36);
-            
-            const tableData = bill.items.map(i => [
-                i.name,
-                i.quantity || 1,
-                `₹${i.rate}`,
-                `₹${i.subtotal || i.rate}`
-            ]);
-            
-            doc.autoTable({
-                startY: 48,
-                head: [["Item", "Qty", "Rate", "Amount"]],
-                body: tableData,
-                theme: 'striped',
-                headStyles: { fillColor: [34, 197, 94] }
-            });
-            
-            const finalY = doc.lastAutoTable.finalY + 10;
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'bold');
-            doc.text(`Total Amount: ₹${bill.total}`, 14, finalY);
-            
-            doc.setFontSize(10);
-            doc.text("Thank you for your business!", 14, finalY + 10);
-            
-            doc.save(`Bill_${bill.billNo}_${bill.customer}.pdf`);
-        };
+    const downloadPDF = (bill) => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        doc.setFontSize(18);
+        doc.text("SRI VINAYAGA LABER WORKS", 14, 15);
+        doc.setFontSize(10);
+        doc.text("Sinthan Nagar, Krishnampalayam, Erode - 03", 14, 22);
+        doc.text("Cell: 9095786363, 8015767107", 14, 27);
+        
+        doc.setFontSize(12);
+        doc.text(`Bill No: ${bill.billNo}`, 14, 36);
+        doc.text(`Customer: ${bill.customer}`, 14, 42);
+        doc.text(`Date: ${bill.date.split(',')[0]}`, 140, 36);
+        
+        const tableData = bill.items.map(i => [
+            i.name,
+            i.quantity || 1,
+            `₹${i.rate}`,
+            `₹${i.subtotal || i.rate}`
+        ]);
+        
+        doc.autoTable({
+            startY: 48,
+            head: [["Item", "Qty", "Rate", "Amount"]],
+            body: tableData,
+            theme: 'striped',
+            headStyles: { fillColor: [34, 197, 94] }
+        });
+        
+        const finalY = doc.lastAutoTable.finalY + 10;
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text(`Total Amount: ₹${bill.total}`, 14, finalY);
+        
+        doc.setFontSize(10);
+        doc.text("Thank you for your business!", 14, finalY + 10);
+        
+        doc.save(`Bill_${bill.billNo}_${bill.customer}.pdf`);
+    };
 
-        const handleSendWhatsApp = () => {
-            if (currentBill) {
+    const handleSendWhatsApp = () => {
+        if (currentBill) {
+            sendWhatsApp(currentBill);
+        }
+    };
+
+    const handleDownloadPDF = () => {
+        if (currentBill) {
+            downloadPDF(currentBill);
+        }
+    };
+
+    const handleBothActions = () => {
+        if (currentBill) {
+            downloadPDF(currentBill);
+            setTimeout(() => {
                 sendWhatsApp(currentBill);
-            }
-        };
+            }, 1000);
+        }
+    };
 
-        const handleDownloadPDF = () => {
-            if (currentBill) {
-                downloadPDF(currentBill);
-            }
-        };
+    const completeBillProcess = () => {
+        setBillNo(billNo + 1);
+        setCart([]);
+        setCustomer("");
+        clearAllQuantities();
+        setCurrentBill(null);
+        setShowBillOptions(false);
+        showNotification("New bill started. Ready to create new order!", 'success');
+    };
 
-        const handleBothActions = () => {
-            if (currentBill) {
-                downloadPDF(currentBill);
-                setTimeout(() => {
-                    sendWhatsApp(currentBill);
-                }, 1000);
-            }
-        };
+    const removeFromCart = (index) => {
+        setCart(prev => prev.filter((_, i) => i !== index));
+        showNotification("Item removed from cart", 'success');
+    };
 
-        const completeBillProcess = () => {
-            setBillNo(billNo + 1);
-            setCart([]);
-            setCustomer("");
-            clearAllQuantities();
-            setCurrentBill(null);
-            setShowBillOptions(false);
-        };
+    const updateCartQuantity = (index, change) => {
+        setCart(prev => {
+            const newCart = [...prev];
+            const item = { ...newCart[index] };
+            const newQuantity = Math.max(1, (item.quantity || 1) + change);
+            item.quantity = newQuantity;
+            item.subtotal = item.rate * newQuantity;
+            newCart[index] = item;
+            return newCart;
+        });
+    };
 
-        const removeFromCart = (index) => {
-            setCart(prev => prev.filter((_, i) => i !== index));
-        };
+    // Get products for current category
+    const currentProducts = useMemo(() => {
+        if (activeCategory === "bend") return PRODUCTS.bend;
+        if (activeCategory === "coupler") return PRODUCTS.coupler;
+        return PRODUCTS.jet;
+    }, [activeCategory]);
 
-        const updateCartQuantity = (index, change) => {
-            setCart(prev => {
-                const newCart = [...prev];
-                const item = { ...newCart[index] };
-                const newQuantity = Math.max(1, (item.quantity || 1) + change);
-                item.quantity = newQuantity;
-                item.subtotal = item.rate * newQuantity;
-                newCart[index] = item;
-                return newCart;
-            });
-        };
+    return (
+        <div className="min-h-screen bg-gray-50">
+            {/* Notification */}
+            {notification && (
+                <Notification 
+                    message={notification.message} 
+                    type={notification.type}
+                    onClose={() => setNotification(null)}
+                />
+            )}
 
-        // Get products for current category
-        const currentProducts = useMemo(() => {
-            if (activeCategory === "bend") return PRODUCTS.bend;
-            if (activeCategory === "coupler") return PRODUCTS.coupler;
-            return PRODUCTS.jet;
-        }, [activeCategory]);
+            {/* App Container */}
+            <div className="container-padding">
+                {/* Hidden owner login trigger */}
+                <div 
+                    className="hidden-login touch-target" 
+                    onClick={() => setShowLogin(true)}
+                    title="Owner Login / உரிமையாளர் உள்நுழைவு"
+                >
+                    🔒
+                </div>
 
-        return (
-            <div className="min-h-screen bg-gray-50">
-                {/* App Container */}
-                <div className="container-padding">
-                    {/* Hidden owner login trigger */}
-                    <div 
-                        className="hidden-login touch-target" 
-                        onClick={() => setShowLogin(true)}
-                        title="Owner Login / உரிமையாளர் உள்நுழைவு"
-                    >
-                        🔒
-                    </div>
-
-                    {/* Owner Login Modal */}
-                    {showLogin && !ownerMode && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                            <div className="bg-white p-6 rounded-xl w-full max-w-sm modal-enter">
-                                <h3 className="font-black mb-4 text-center text-lg">
-                                    <DualText en="Owner Login" ta="உரிமையாளர் உள்நுழைவு" />
-                                </h3>
-                                <input 
-                                    type="password" 
-                                    placeholder="Enter Password"
-                                    value={password} 
-                                    onChange={e=>setPassword(e.target.value)}
-                                    className="mb-4"
-                                    onKeyPress={(e) => e.key === 'Enter' && password === OWNER_PASSWORD && setOwnerMode(true)}
-                                />
-                                <div className="flex space-x-2">
-                                    <button 
-                                        className="bg-green-600 text-white flex-1 p-3 rounded-lg font-medium"
-                                        onClick={() => {
-                                            if (password === OWNER_PASSWORD) {
-                                                setOwnerMode(true);
-                                                setShowLogin(false);
-                                                setPassword("");
-                                            } else {
-                                                alert("Incorrect password / தவறான கடவுச்சொல்");
-                                            }
-                                        }}
-                                    >
-                                        <DualText en="Login" ta="உள்நுழைவு" />
-                                    </button>
-                                    <button 
-                                        className="bg-gray-300 text-black flex-1 p-3 rounded-lg font-medium"
-                                        onClick={() => setShowLogin(false)}
-                                    >
-                                        <DualText en="Cancel" ta="ரத்து செய்" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Bill Options Modal */}
-                    {showBillOptions && currentBill && (
-                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                            <div className="bg-white p-6 rounded-xl w-full max-w-sm modal-enter">
-                                <h3 className="font-black mb-4 text-center text-lg">🎉 
-                                    <DualText en="Bill Generated!" ta="பில் உருவாக்கப்பட்டது!" />
-                                </h3>
-                                <p className="text-center mb-2 font-medium">
-                                    <DualText en={`Bill No: #${currentBill.billNo}`} ta={`பில் எண்: #${currentBill.billNo}`} />
-                                </p>
-                                <p className="text-center mb-6 text-gray-600">
-                                    <DualText en={`Customer: ${currentBill.customer}`} ta={`வாடிக்கையாளர்: ${currentBill.customer}`} />
-                                </p>
-                                
-                                <div className="space-y-3">
-                                    <button 
-                                        className="bg-gradient-to-r from-green-500 to-blue-500 text-white w-full p-3 rounded-lg font-medium shadow-md"
-                                        onClick={handleBothActions}
-                                    >
-                                        📲 <DualText en="Send WhatsApp & Download PDF" ta="WhatsApp அனுப்பு & PDF பதிவிறக்கு" />
-                                    </button>
-                                    
-                                    <button 
-                                        className="bg-green-600 text-white w-full p-3 rounded-lg font-medium"
-                                        onClick={handleSendWhatsApp}
-                                    >
-                                        📲 <DualText en="Send via WhatsApp" ta="WhatsApp மூலம் அனுப்பு" />
-                                    </button>
-                                    
-                                    <button 
-                                        className="bg-blue-600 text-white w-full p-3 rounded-lg font-medium"
-                                        onClick={handleDownloadPDF}
-                                    >
-                                        📥 <DualText en="Download PDF" ta="PDF பதிவிறக்கு" />
-                                    </button>
-                                    
-                                    <button 
-                                        className="bg-gray-100 text-gray-800 w-full p-3 rounded-lg font-medium border"
-                                        onClick={completeBillProcess}
-                                    >
-                                        ✅ <DualText en="Done & New Bill" ta="முடிந்தது & புதிய பில்" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* HEADER */}
-                    <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 p-4 rounded-xl text-center font-black shadow-lg mb-6">
-                        <div className="text-xl md:text-2xl">
-                            <DualText en="SRI VINAYAGA LABER WORKS" ta="ஸ்ரீ விநாயக லேபர் வொர்க்ஸ்" />
-                        </div>
-                        <div className="text-xs md:text-sm font-normal mt-2">
-                            <div className="tamil-text">
-                                <DualText 
-                                    en="Sinthan Nagar, Krishnampalayam, Erode - 03" 
-                                    ta="சிந்தன் நகர், கிருஷ்ணம்பாளையம், ஈரோடு - 03" 
-                                />
-                            </div>
-                            <div className="mt-1">
-                                <DualText 
-                                    en="📞 Cell: 9095786363, 8015767107" 
-                                    ta="📞 தொலைபேசி: 9095786363, 8015767107" 
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* OWNER HISTORY */}
-                    {ownerMode && (
-                        <div className="bg-white p-4 rounded-xl shadow mb-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="font-black text-lg">
-                                    <DualText en="📋 Order History" ta="📋 ஆர்டர் வரலாறு" />
-                                </h3>
+                {/* Owner Login Modal */}
+                {showLogin && !ownerMode && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white p-6 rounded-xl w-full max-w-sm modal-enter">
+                            <h3 className="font-black mb-4 text-center text-lg">
+                                <DualText en="Owner Login" ta="உரிமையாளர் உள்நுழைவு" />
+                            </h3>
+                            <input 
+                                type="password" 
+                                placeholder="Enter Password"
+                                value={password} 
+                                onChange={e=>setPassword(e.target.value)}
+                                className="mb-4"
+                                onKeyPress={(e) => e.key === 'Enter' && password === OWNER_PASSWORD && setOwnerMode(true)}
+                            />
+                            <div className="flex space-x-2">
                                 <button 
-                                    className="text-sm bg-red-500 text-white px-4 py-2 rounded-lg font-medium"
-                                    onClick={() => setOwnerMode(false)}
+                                    className="bg-green-600 text-white flex-1 p-3 rounded-lg font-medium"
+                                    onClick={() => {
+                                        if (password === OWNER_PASSWORD) {
+                                            setOwnerMode(true);
+                                            setShowLogin(false);
+                                            setPassword("");
+                                            showNotification("Owner logged in successfully", 'success');
+                                        } else {
+                                            showNotification("Incorrect password", 'error');
+                                        }
+                                    }}
                                 >
-                                    <DualText en="Logout" ta="வெளியேறு" />
+                                    <DualText en="Login" ta="உள்நுழைவு" />
+                                </button>
+                                <button 
+                                    className="bg-gray-300 text-black flex-1 p-3 rounded-lg font-medium"
+                                    onClick={() => setShowLogin(false)}
+                                >
+                                    <DualText en="Cancel" ta="ரத்து செய்" />
                                 </button>
                             </div>
-                            {history.length===0 ? (
-                                <p className="text-gray-500 text-center py-4">
-                                    <DualText en="No bills yet" ta="இன்னும் பில்ல்கள் இல்லை" />
-                                </p>
-                            ) : (
-                                <div className="space-y-3 max-h-80 overflow-y-auto">
-                                    {history.map(b=>(
-                                        <div key={b.billNo} className="border border-gray-200 p-3 rounded-lg">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <div className="font-bold">#{b.billNo}</div>
-                                                    <div className="text-sm text-gray-600">{b.customer}</div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="font-bold text-green-600">₹{b.total}</div>
-                                                    <div className="text-xs text-gray-500">{b.date.split(',')[0]}</div>
-                                                </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Bill Options Modal */}
+                {showBillOptions && currentBill && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white p-6 rounded-xl w-full max-w-sm modal-enter">
+                            <h3 className="font-black mb-4 text-center text-lg">🎉 
+                                <DualText en="Bill Generated!" ta="பில் உருவாக்கப்பட்டது!" />
+                            </h3>
+                            <p className="text-center mb-2 font-medium">
+                                <DualText en={`Bill No: #${currentBill.billNo}`} ta={`பில் எண்: #${currentBill.billNo}`} />
+                            </p>
+                            <p className="text-center mb-6 text-gray-600">
+                                <DualText en={`Customer: ${currentBill.customer}`} ta={`வாடிக்கையாளர்: ${currentBill.customer}`} />
+                            </p>
+                            
+                            <div className="space-y-3">
+                                <button 
+                                    className="bg-gradient-to-r from-green-500 to-blue-500 text-white w-full p-3 rounded-lg font-medium shadow-md"
+                                    onClick={handleBothActions}
+                                >
+                                    📲 <DualText en="Send WhatsApp & Download PDF" ta="WhatsApp அனுப்பு & PDF பதிவிறக்கு" />
+                                </button>
+                                
+                                <button 
+                                    className="bg-green-600 text-white w-full p-3 rounded-lg font-medium"
+                                    onClick={handleSendWhatsApp}
+                                >
+                                    📲 <DualText en="Send via WhatsApp" ta="WhatsApp மூலம் அனுப்பு" />
+                                </button>
+                                
+                                <button 
+                                    className="bg-blue-600 text-white w-full p-3 rounded-lg font-medium"
+                                    onClick={handleDownloadPDF}
+                                >
+                                    📥 <DualText en="Download PDF" ta="PDF பதிவிறக்கு" />
+                                </button>
+                                
+                                <button 
+                                    className="bg-gray-100 text-gray-800 w-full p-3 rounded-lg font-medium border"
+                                    onClick={completeBillProcess}
+                                >
+                                    ✅ <DualText en="Done & New Bill" ta="முடிந்தது & புதிய பில்" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* HEADER */}
+                <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 p-4 rounded-xl text-center font-black shadow-lg mb-6">
+                    <div className="text-xl md:text-2xl">
+                        <DualText en="SRI VINAYAGA LABER WORKS" ta="ஸ்ரீ விநாயக லேபர் வொர்க்ஸ்" />
+                    </div>
+                    <div className="text-xs md:text-sm font-normal mt-2">
+                        <div className="tamil-text">
+                            <DualText 
+                                en="Sinthan Nagar, Krishnampalayam, Erode - 03" 
+                                ta="சிந்தன் நகர், கிருஷ்ணம்பாளையம், ஈரோடு - 03" 
+                            />
+                        </div>
+                        <div className="mt-1">
+                            <DualText 
+                                en="📞 Cell: 9095786363, 8015767107" 
+                                ta="📞 தொலைபேசி: 9095786363, 8015767107" 
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* OWNER HISTORY */}
+                {ownerMode && (
+                    <div className="bg-white p-4 rounded-xl shadow mb-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-black text-lg">
+                                <DualText en="📋 Order History" ta="📋 ஆர்டர் வரலாறு" />
+                            </h3>
+                            <button 
+                                className="text-sm bg-red-500 text-white px-4 py-2 rounded-lg font-medium"
+                                onClick={() => {
+                                    setOwnerMode(false);
+                                    showNotification("Logged out successfully", 'success');
+                                }}
+                            >
+                                <DualText en="Logout" ta="வெளியேறு" />
+                            </button>
+                        </div>
+                        {history.length===0 ? (
+                            <p className="text-gray-500 text-center py-4">
+                                <DualText en="No bills yet" ta="இன்னும் பில்ல்கள் இல்லை" />
+                            </p>
+                        ) : (
+                            <div className="space-y-3 max-h-80 overflow-y-auto">
+                                {history.map(b=>(
+                                    <div key={b.billNo} className="border border-gray-200 p-3 rounded-lg">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <div className="font-bold">#{b.billNo}</div>
+                                                <div className="text-sm text-gray-600">{b.customer}</div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="font-bold text-green-600">₹{b.total}</div>
+                                                <div className="text-xs text-gray-500">{b.date.split(',')[0]}</div>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
-                    {/* CUSTOMER INPUT */}
-                    <div className="bg-white p-4 rounded-xl shadow mb-6">
-                        <label className="block font-medium mb-2">
-                            <DualText en="👤 Customer Name" ta="👤 வாடிக்கையாளர் பெயர்" />
-                        </label>
-                        <input 
-                            placeholder="Enter customer name / வாடிக்கையாளர் பெயரை உள்ளிடவும்"
-                            value={customer} 
-                            onChange={e=>setCustomer(e.target.value)}
-                            className="text-lg touch-target"
-                        />
+                {/* CUSTOMER INPUT */}
+                <div className="bg-white p-4 rounded-xl shadow mb-6">
+                    <label className="block font-medium mb-2">
+                        <DualText en="👤 Customer Name" ta="👤 வாடிக்கையாளர் பெயர்" />
+                    </label>
+                    <input 
+                        placeholder="Enter customer name / வாடிக்கையாளர் பெயரை உள்ளிடவும்"
+                        value={customer} 
+                        onChange={e=>setCustomer(e.target.value)}
+                        className="text-lg touch-target"
+                    />
+                </div>
+
+                {/* PRODUCT SELECTION */}
+                <div className="bg-white rounded-xl shadow overflow-hidden mb-6">
+                    {/* Category Tabs */}
+                    <div className="flex border-b">
+                        <button
+                            className={`flex-1 p-3 font-medium ${activeCategory === "bend" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100"} touch-target`}
+                            onClick={() => setActiveCategory("bend")}
+                        >
+                            🔧 <DualText en="BEND" ta="பெண்ட்" />
+                        </button>
+                        <button
+                            className={`flex-1 p-3 font-medium ${activeCategory === "coupler" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100"} touch-target`}
+                            onClick={() => setActiveCategory("coupler")}
+                        >
+                            🔗 <DualText en="COUPLER" ta="கப்லர்" />
+                        </button>
+                        <button
+                            className={`flex-1 p-3 font-medium ${activeCategory === "jet" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100"} touch-target`}
+                            onClick={() => setActiveCategory("jet")}
+                        >
+                            💧 <DualText en="JET VALVE" ta="ஜெட் வால்வ்" />
+                        </button>
                     </div>
 
-                    {/* PRODUCT SELECTION */}
-                    <div className="bg-white rounded-xl shadow overflow-hidden mb-6">
-                        {/* Category Tabs */}
-                        <div className="flex border-b">
-                            <button
-                                className={`flex-1 p-3 font-medium ${activeCategory === "bend" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100"} touch-target`}
-                                onClick={() => setActiveCategory("bend")}
-                            >
-                                🔧 <DualText en="BEND" ta="பெண்ட்" />
-                            </button>
-                            <button
-                                className={`flex-1 p-3 font-medium ${activeCategory === "coupler" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100"} touch-target`}
-                                onClick={() => setActiveCategory("coupler")}
-                            >
-                                🔗 <DualText en="COUPLER" ta="கப்லர்" />
-                            </button>
-                            <button
-                                className={`flex-1 p-3 font-medium ${activeCategory === "jet" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100"} touch-target`}
-                                onClick={() => setActiveCategory("jet")}
-                            >
-                                💧 <DualText en="JET VALVE" ta="ஜெட் வால்வ்" />
-                            </button>
-                        </div>
-
-                        {/* Product List */}
-                        <div className={`max-h-80 md:max-h-96 overflow-y-auto p-3 ${isMobile ? '' : 'product-grid'}`}>
-                            {currentProducts.map((product, index) => {
-                                if (activeCategory === "bend" || activeCategory === "coupler") {
-                                    return Object.entries(product.rates).map(([weight, rate]) => {
-                                        const productKey = `${activeCategory}_${product.size}_${weight}`;
-                                        const quantity = productQuantities[productKey] || 0;
-                                        
-                                        return (
-                                            <div key={`${product.size}-${weight}`} className="product-card border border-gray-200 rounded-lg p-3 mb-3">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <div>
-                                                        <div className="font-bold">
-                                                            {activeCategory === "bend" ? (
-                                                                <DualText 
-                                                                    en={`${product.size}mm BEND`} 
-                                                                    ta={`${product.size}mm பெண்ட்`} 
-                                                                />
-                                                            ) : (
-                                                                <DualText 
-                                                                    en={`${product.size}mm COUPLER`} 
-                                                                    ta={`${product.size}mm கப்லர்`} 
-                                                                />
-                                                            )}
-                                                        </div>
-                                                        <div className="text-sm text-gray-600">{weight}</div>
-                                                    </div>
-                                                    <div className="font-bold text-green-600">₹{rate}</div>
-                                                </div>
-                                                
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center space-x-2">
-                                                        <button 
-                                                            onClick={() => updateQuantity(productKey, -1)}
-                                                            disabled={quantity === 0}
-                                                            className={`quantity-btn touch-target ${quantity === 0 ? 'bg-gray-200 text-gray-400' : 'bg-red-100 text-red-600'}`}
-                                                        >
-                                                            −
-                                                        </button>
-                                                        <div className="w-10 text-center font-bold">{quantity}</div>
-                                                        <button 
-                                                            onClick={() => updateQuantity(productKey, 1)}
-                                                            className="quantity-btn touch-target bg-green-100 text-green-600"
-                                                        >
-                                                            +
-                                                        </button>
-                                                    </div>
-                                                    <div className="text-sm font-medium">
-                                                        <DualText en="Subtotal:" ta="துணைத்தொகை:" /> <span className="text-blue-600">₹{rate * quantity}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    });
-                                } else {
-                                    // Jet Valves
-                                    const productKey = `jet_${product.name}`;
+                    {/* Product List */}
+                    <div className={`max-h-80 md:max-h-96 overflow-y-auto p-3 ${isMobile ? '' : 'product-grid'}`}>
+                        {currentProducts.map((product, index) => {
+                            if (activeCategory === "bend" || activeCategory === "coupler") {
+                                return Object.entries(product.rates).map(([weight, rate]) => {
+                                    const productKey = `${activeCategory}_${product.size}_${weight}`;
                                     const quantity = productQuantities[productKey] || 0;
                                     
                                     return (
-                                        <div key={product.name} className="product-card border border-gray-200 rounded-lg p-3 mb-3">
+                                        <div key={`${product.size}-${weight}`} className="product-card border border-gray-200 rounded-lg p-3 mb-3">
                                             <div className="flex justify-between items-center mb-2">
                                                 <div>
                                                     <div className="font-bold">
-                                                        <DualText en="JET FOOT VALVE" ta="ஜெட் ஃபுட் வால்வ்" />
+                                                        {activeCategory === "bend" ? (
+                                                            <DualText 
+                                                                en={`${product.size}mm BEND`} 
+                                                                ta={`${product.size}mm பெண்ட்`} 
+                                                            />
+                                                        ) : (
+                                                            <DualText 
+                                                                en={`${product.size}mm COUPLER`} 
+                                                                ta={`${product.size}mm கப்லர்`} 
+                                                            />
+                                                        )}
                                                     </div>
-                                                    <div className="text-sm text-gray-600">{product.name}</div>
+                                                    <div className="text-sm text-gray-600">{weight}</div>
                                                 </div>
-                                                <div className="font-bold text-green-600">₹{product.rate}</div>
+                                                <div className="font-bold text-green-600">₹{rate}</div>
                                             </div>
                                             
                                             <div className="flex items-center justify-between">
@@ -973,169 +1013,210 @@ TOTAL: ₹${bill.total}`;
                                                     </button>
                                                 </div>
                                                 <div className="text-sm font-medium">
-                                                    <DualText en="Subtotal:" ta="துணைத்தொகை:" /> <span className="text-blue-600">₹{product.rate * quantity}</span>
+                                                    <DualText en="Subtotal:" ta="துணைத்தொகை:" /> <span className="text-blue-600">₹{rate * quantity}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     );
-                                }
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Add Selected to Cart Button */}
-                    <button 
-                        onClick={addToCartFromQuantities}
-                        className="bg-gradient-to-r from-blue-500 to-purple-600 text-white w-full p-4 rounded-xl font-bold text-lg shadow-lg mb-6 touch-target"
-                    >
-                        🛒 <DualText en="Add Selected to Cart" ta="தேர்ந்தெடுத்தவற்றை கார்ட்டில் சேர்க்கவும்" />
-                    </button>
-
-                    {/* CART */}
-                    <div className="bg-white rounded-xl shadow-lg p-4 mb-24 md:mb-6">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-black text-lg">
-                                🛍️ <DualText en={`Cart (${cart.length} items)`} ta={`கார்ட் (${cart.length} பொருட்கள்)`} />
-                            </h3>
-                            <div className="font-bold text-green-600 text-lg">₹{total}</div>
-                        </div>
-                        
-                        <div className="max-h-48 overflow-y-auto mb-4">
-                            {cart.length === 0 ? (
-                                <p className="text-gray-500 text-center py-4">
-                                    <DualText en="Cart is empty" ta="கார்ட் காலியாக உள்ளது" />
-                                </p>
-                            ) : (
-                                <div className="space-y-2">
-                                    {cart.map((item, index) => (
-                                        <div key={index} className="cart-item bg-gray-50 p-3 rounded-lg">
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex-1">
-                                                    <div className="font-medium text-sm">{item.name}</div>
-                                                    <div className="text-xs text-gray-600">
-                                                        <DualText en={`₹${item.rate} each`} ta={`₹${item.rate} ஒவ்வொன்றும்`} />
-                                                    </div>
+                                });
+                            } else {
+                                // Jet Valves
+                                const productKey = `jet_${product.name}`;
+                                const quantity = productQuantities[productKey] || 0;
+                                
+                                return (
+                                    <div key={product.name} className="product-card border border-gray-200 rounded-lg p-3 mb-3">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <div>
+                                                <div className="font-bold">
+                                                    <DualText en="JET FOOT VALVE" ta="ஜெட் ஃபுட் வால்வ்" />
                                                 </div>
-                                                <div className="flex items-center space-x-2">
-                                                    <div className="flex items-center space-x-1">
-                                                        <button 
-                                                            onClick={() => updateCartQuantity(index, -1)}
-                                                            className="w-8 h-8 rounded-full bg-gray-200 text-sm touch-target"
-                                                        >
-                                                            −
-                                                        </button>
-                                                        <span className="font-bold w-6 text-center">{item.quantity || 1}</span>
-                                                        <button 
-                                                            onClick={() => updateCartQuantity(index, 1)}
-                                                            className="w-8 h-8 rounded-full bg-gray-200 text-sm touch-target"
-                                                        >
-                                                            +
-                                                        </button>
-                                                    </div>
-                                                    <div className="font-bold w-20 text-right">₹{item.subtotal || item.rate}</div>
-                                                    <button 
-                                                        onClick={() => removeFromCart(index)}
-                                                        className="text-red-500 text-lg touch-target p-1"
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </div>
+                                                <div className="text-sm text-gray-600">{product.name}</div>
+                                            </div>
+                                            <div className="font-bold text-green-600">₹{product.rate}</div>
+                                        </div>
+                                        
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-2">
+                                                <button 
+                                                    onClick={() => updateQuantity(productKey, -1)}
+                                                    disabled={quantity === 0}
+                                                    className={`quantity-btn touch-target ${quantity === 0 ? 'bg-gray-200 text-gray-400' : 'bg-red-100 text-red-600'}`}
+                                                >
+                                                    −
+                                                </button>
+                                                <div className="w-10 text-center font-bold">{quantity}</div>
+                                                <button 
+                                                    onClick={() => updateQuantity(productKey, 1)}
+                                                    className="quantity-btn touch-target bg-green-100 text-green-600"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                            <div className="text-sm font-medium">
+                                                <DualText en="Subtotal:" ta="துணைத்தொகை:" /> <span className="text-blue-600">₹{product.rate * quantity}</span>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        
-                        <button 
-                            onClick={generateBill}
-                            disabled={!customer || cart.length === 0}
-                            className={`w-full p-4 rounded-xl font-bold text-lg touch-target ${
-                                !customer || cart.length === 0 
-                                    ? 'bg-gray-300 text-gray-500' 
-                                    : 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg'
-                            }`}
-                        >
-                            {!customer ? (
-                                <DualText en="Enter Customer Name" ta="வாடிக்கையாளர் பெயரை உள்ளிடவும்" />
-                            ) : cart.length === 0 ? (
-                                <DualText en="Add Items to Cart" ta="கார்ட்டில் பொருட்களை சேர்க்கவும்" />
-                            ) : (
-                                <span>💰 <DualText en="Generate Bill" ta="பில் உருவாக்கு" /></span>
-                            )}
-                        </button>
+                                    </div>
+                                );
+                            }
+                        })}
                     </div>
                 </div>
 
-                {/* Mobile bottom spacing */}
-                {isMobile && <div className="h-8"></div>}
-            </div>
-        );
-    }
+                {/* Add Selected to Cart Button */}
+                <button 
+                    onClick={addToCartFromQuantities}
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 text-white w-full p-4 rounded-xl font-bold text-lg shadow-lg mb-6 touch-target"
+                >
+                    🛒 <DualText en="Add Selected to Cart" ta="தேர்ந்தெடுத்தவற்றை கார்ட்டில் சேர்க்கவும்" />
+                </button>
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-    </script>
-    
-    <!-- Create manifest.json content -->
-    <script>
-        // Create manifest dynamically
-        const manifest = {
-            "name": "Sri Vinayaga Laber Works",
-            "short_name": "Laber Works",
-            "description": "Billing system for Sri Vinayaga Laber Works",
-            "start_url": "/",
-            "display": "standalone",
-            "background_color": "#fbbf24",
-            "theme_color": "#fbbf24",
-            "orientation": "portrait",
-            "icons": [
-                {
-                    "src": "icon-72.png",
-                    "sizes": "72x72",
-                    "type": "image/png"
-                },
-                {
-                    "src": "icon-96.png",
-                    "sizes": "96x96",
-                    "type": "image/png"
-                },
-                {
-                    "src": "icon-128.png",
-                    "sizes": "128x128",
-                    "type": "image/png"
-                },
-                {
-                    "src": "icon-144.png",
-                    "sizes": "144x144",
-                    "type": "image/png"
-                },
-                {
-                    "src": "icon-152.png",
-                    "sizes": "152x152",
-                    "type": "image/png"
-                },
-                {
-                    "src": "icon-192.png",
-                    "sizes": "192x192",
-                    "type": "image/png"
-                },
-                {
-                    "src": "icon-384.png",
-                    "sizes": "384x384",
-                    "type": "image/png"
-                },
-                {
-                    "src": "icon-512.png",
-                    "sizes": "512x512",
-                    "type": "image/png"
-                }
-            ]
-        };
-        
-        // Create and set manifest
-        const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-        const manifestURL = URL.createObjectURL(manifestBlob);
-        document.querySelector('link[rel="manifest"]').href = manifestURL;
-    </script>
+                {/* CART */}
+                <div className="bg-white rounded-xl shadow-lg p-4 mb-24 md:mb-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-black text-lg">
+                            🛍️ <DualText en={`Cart (${cart.length} items)`} ta={`கார்ட் (${cart.length} பொருட்கள்)`} />
+                        </h3>
+                        <div className="font-bold text-green-600 text-lg">₹{total}</div>
+                    </div>
+                    
+                    <div className="max-h-48 overflow-y-auto mb-4">
+                        {cart.length === 0 ? (
+                            <p className="text-gray-500 text-center py-4">
+                                <DualText en="Cart is empty" ta="கார்ட் காலியாக உள்ளது" />
+                            </p>
+                        ) : (
+                            <div className="space-y-2">
+                                {cart.map((item, index) => (
+                                    <div key={index} className="cart-item bg-gray-50 p-3 rounded-lg">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex-1">
+                                                <div className="font-medium text-sm">{item.name}</div>
+                                                <div className="text-xs text-gray-600">
+                                                    <DualText en={`₹${item.rate} each`} ta={`₹${item.rate} ஒவ்வொன்றும்`} />
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <div className="flex items-center space-x-1">
+                                                    <button 
+                                                        onClick={() => updateCartQuantity(index, -1)}
+                                                        className="w-8 h-8 rounded-full bg-gray-200 text-sm touch-target"
+                                                    >
+                                                        −
+                                                    </button>
+                                                    <span className="font-bold w-6 text-center">{item.quantity || 1}</span>
+                                                    <button 
+                                                        onClick={() => updateCartQuantity(index, 1)}
+                                                        className="w-8 h-8 rounded-full bg-gray-200 text-sm touch-target"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                                <div className="font-bold w-20 text-right">₹{item.subtotal || item.rate}</div>
+                                                <button 
+                                                    onClick={() => removeFromCart(index)}
+                                                    className="text-red-500 text-lg touch-target p-1"
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    
+                    <button 
+                        onClick={generateBill}
+                        disabled={!customer || cart.length === 0}
+                        className={`w-full p-4 rounded-xl font-bold text-lg touch-target ${
+                            !customer || cart.length === 0 
+                                ? 'bg-gray-300 text-gray-500' 
+                                : 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg'
+                        }`}
+                    >
+                        {!customer ? (
+                            <DualText en="Enter Customer Name" ta="வாடிக்கையாளர் பெயரை உள்ளிடவும்" />
+                        ) : cart.length === 0 ? (
+                            <DualText en="Add Items to Cart" ta="கார்ட்டில் பொருட்களை சேர்க்கவும்" />
+                        ) : (
+                            <span>💰 <DualText en="Generate Bill" ta="பில் உருவாக்கு" /></span>
+                        )}
+                    </button>
+                </div>
+            </div>
+
+            {/* Mobile bottom spacing */}
+            {isMobile && <div className="h-8"></div>}
+        </div>
+    );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+
+<!-- Create manifest.json content -->
+<script>
+// Create manifest dynamically
+const manifest = {
+    "name": "Sri Vinayaga Laber Works",
+    "short_name": "Laber Works",
+    "description": "Billing system for Sri Vinayaga Laber Works",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#fbbf24",
+    "theme_color": "#fbbf24",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "icon-72.png",
+            "sizes": "72x72",
+            "type": "image/png"
+        },
+        {
+            "src": "icon-96.png",
+            "sizes": "96x96",
+            "type": "image/png"
+        },
+        {
+            "src": "icon-128.png",
+            "sizes": "128x128",
+            "type": "image/png"
+        },
+        {
+            "src": "icon-144.png",
+            "sizes": "144x144",
+            "type": "image/png"
+        },
+        {
+            "src": "icon-152.png",
+            "sizes": "152x152",
+            "type": "image/png"
+        },
+        {
+            "src": "icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icon-384.png",
+            "sizes": "384x384",
+            "type": "image/png"
+        },
+        {
+            "src": "icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+};
+
+// Create and set manifest
+const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+const manifestURL = URL.createObjectURL(manifestBlob);
+document.querySelector('link[rel="manifest"]').href = manifestURL;
+</script>
 </body>
 </html>
